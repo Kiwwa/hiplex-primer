@@ -62,6 +62,27 @@ def complement_positions(top, bottom):
 
     return positions
 
+def get_score(positions):
+    # Find the longest consecutive matches
+    score = 0
+    maxscore = 0
+    if len(positions) == 1:
+        score = 1
+    elif len(positions) > 1:
+        score = 1
+        lastposition = positions[0]
+        for position in positions[1:]:
+            if position == lastposition + 1:
+                score += 1
+            else:
+                if score > maxscore:
+                    maxscore = score
+                score = 1
+            lastposition = position
+    if score > maxscore:
+        maxscore = score
+    return maxscore
+
 
 class Dimer(object):
     def __init__(self, top, bottom=None):
@@ -94,29 +115,13 @@ class Dimer(object):
             maxscore = (0, None, None, None)
             for direction, index, positions in matches:
                 #print_dimer(direction, index, positions)
-                # find the consecutive positions
-                score = 0
-                if len(positions) == 1:
-                    score = 1
-                elif len(positions) > 1:
-                    score = 1
-                    lastposition = positions[0]
-                    for position in positions[1:]:
-                        if position == lastposition + 1:
-                            score += 1
-                        else:
-                            if score > maxscore[0]:
-                                maxscore = (score, direction, index, positions)
-                            score = 1
-                        lastposition = position
+                score = get_score(positions)
                 if score > maxscore[0]:
                     maxscore = (score, direction, index, positions)
-            print 'Max scored dimer is', maxscore
-            print_dimer(maxscore[1], maxscore[2], maxscore[3])
             return maxscore
 
         def print_dimer(direction, index, positions):
-            if len(positions) > 0:
+            if positions:
                 matchSigns = [s for s in ' '*min(len(self._top),
                                                  len(self._bottom))]
                 for i in positions:
@@ -138,8 +143,10 @@ class Dimer(object):
                 print '-'*2*(max(len(self._top), len(self._bottom)) + 10)
 
         matches = detect_dimers()
-        self._maxscore = find_maxscore(matches)
-        return self._maxscore
+        maxscore = find_maxscore(matches)
+        print 'Max scored dimer is', maxscore
+        print_dimer(maxscore[1], maxscore[2], maxscore[3])
+        return maxscore[0]
 
 
 primers = ['GTTTTGCTCGCCAACGGTTTGG',
@@ -162,9 +169,10 @@ primers = ['GTTTTGCTCGCCAACGGTTTGG',
            'TTTGCTCGCAGCCGGTCTG',
            'ATTAGGCAGAGGTGAAAAAG']
 
-s = 'CCCAGTTTTAATATTTGACA'
-t = 'CAAAGGTGGAATAAACATTG'
-Dimer(s, t).score()
+#s = 'CCCAGTTTTAATATTTGACA'
+#t = 'CAAAGGTGGAATAAACATTG'
+s = 'TAAGCCCTGATCATTAT'
+Dimer(s).score()
 #print 'num of comparisions = %d' % mycomparision
 #print '----------------------'
 

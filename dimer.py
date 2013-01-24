@@ -169,10 +169,9 @@ primers = ['GTTTTGCTCGCCAACGGTTTGG',
            'TTTGCTCGCAGCCGGTCTG',
            'ATTAGGCAGAGGTGAAAAAG']
 
-#s = 'CCCAGTTTTAATATTTGACA'
-#t = 'CAAAGGTGGAATAAACATTG'
-s = 'TAAGCCCTGATCATTAT'
-Dimer(s).score()
+s = 'GGATTGATAATGTAATAGG'
+t = 'CATTATGGGTGGTATGTTGG'
+Dimer(s, t[::-1]).score()
 #print 'num of comparisions = %d' % mycomparision
 #print '----------------------'
 

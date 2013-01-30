@@ -64,6 +64,10 @@ parser.add_argument('--maxhairpinsize',
                     metavar='H',
                     type=int,
                     help='maximum hairpin size allowed')
+parser.add_argument('--blocksizevar',
+                    metavar='B',
+                    type=int,
+                    help='block size variance')
 
 def main():
     options = parser.parse_args()
@@ -85,11 +89,13 @@ def main():
             # score all the sliding windows over this exon
             window_scores = score_exon_windows(options, chr, gene_name, exon_id, exon_start, exon_end)
             # find the best scoring window for this exon
-            best_window = get_best_window(options, window_scores)
+            # best_window = get_best_window(options, window_scores)
+            best_blocks = get_optimal_primer_combination(options, window_scores)
             # print out the primers for the best window
-            # print_best_primers(gene_name, exon_id, chr, exon_start, exon_end, window_scores[best_window])
-            if best_window is not None:
-                print_best_primers(options.idtfile, gene_name, exon_id, chr, exon_start, exon_end, window_scores[best_window])
+            if best_blocks is not None:
+                print_best_primers(options.idtfile, gene_name, exon_id, chr,
+                                   exon_start, exon_end, best_blocks)
+                #print_best_primers(options.idtfile, gene_name, exon_id, chr, exon_start, exon_end, window_scores[best_window])
                 
 # parse the coordinates of a chromosome position in the format:
 # chr:start-end
@@ -307,6 +313,196 @@ def score_exon_windows(options, chr, gene_name, exon_id, exon_start, exon_end):
         window_count += 1
     return window_scores
 
+
+'''
+              |-------- block 0 --------|-------- block 1 --------|
+              |---------------------------------------------------|
+window 1 ----\|                         |/----                    
+                                   ----\|                         |/----
+
+window 2  ----\|                         |/----
+                                    ----\|                         |/----
+...           ...                           ...                       ...
+
+window n         ----\|                         |/----
+                                           ----/|                       |/----
+
+
+ The score of block 0 forward primer     
+      ^
+score |    |
+      |  * |  *
+      | * *| * **  **
+      |*   **    **
+      |____|___________> window
+
+ The score of block 0 reverse primer
+      ^
+score |*   |*
+      | * ** *
+      |  * |  *   *
+      |    |   *** **  
+      |____|___________> window
+      |    |
+      |    |
+       <-->
+block size variance
+
+ 1. choose the best scored primers between block size variance.
+ 2. move on to the next block.
+
+ The score of block 1 forward primer
+      ^
+score |  |  
+      |  | *     **
+      |  |* **  *  *
+      |***    **    *
+      |__|_____________> window
+
+ The score of block 1 reverse primer
+      ^
+score |  |   **
+      |  | **  *
+      |**|      *  *
+      |  ***      **
+      |__|_____________> window
+      |  |  
+      |  | 
+       <>
+    block size variance
+    * the end of block size variance should be not greater than
+      the end of reverse primer of the previous block.
+
+ 3. choose the best scored primers between block size variance.
+
+'''
+
+def get_optimal_primer_combination(options, window_scores):
+    
+    def get_best_scored_primer(block, direction, var_start, var_end):
+        primers = block[direction][var_start:var_end]
+        best_index = 0
+        best_score = None
+        for n, primer in enumerate(primers):
+            if primer is not None:
+                if best_score is None:
+                    best_index = n
+                    best_score = primer.score
+                elif best_score > primer.score:
+                    best_index = n
+                    best_score = primer.score
+        return best_index + var_start, primers[best_index]
+
+    def get_block_primers(window_scores): 
+        # Make the list of primers that belong to
+        # the same block and the same direction.
+        # <window_scores>
+        # Each window has a list of ScoredBlock.
+        # Each ScoredBlock has two ScoredPrimer for forward and reverse.
+        # e.g, window_scores = {1234:[ScoredBlock, ScoredBlock],
+        #                       1235:[ScoredBlock, ScoredBlock]} 
+        # => <blocks>
+        # Each block has two types of primers. forward and reverse.
+        # e.g, blocks = {0: {'forward':[ScoredPrimer, ..],
+        #                      'reverse':[ScoredPrimer, ..]},
+        #                1: {'forward':[ScoredPrimer, ..],
+        #                      'reverse':[ScoredPrimer, ..]}
+        num_blocks = 0
+        blocks = {}
+        windows = []
+        for window, scoredBlocks in window_scores.items():
+            num_blocks = len(scoredBlocks)
+            break
+        for num in range(0, num_blocks):
+            blocks[num] = {}
+            blocks[num]['forward'] = []
+            blocks[num]['reverse'] = []
+
+        for window, scoredBlocks in window_scores.items():
+            windows.append(window)
+            for block in scoredBlocks:
+                forward = block.primer_forward
+                reverse = block.primer_reverse
+                blocks[block.block_num]['forward'].append(forward)
+                blocks[block.block_num]['reverse'].append(reverse)
+        return windows, blocks
+
+    def get_subset_combination(blocks, start_index, maxvar):
+        # Find the best combination of primers within
+        # (start_index ~ start_index + maxvar)
+        # If there is no primers for any block and any direction,
+        # which means there is no candidate primer to be combined,
+        # return None.
+        var_start = start_index
+        var_end = var_start+maxvar+1
+        total_score = 0
+        subset = []
+        positions = []
+        no_candidates = False
+        num_blocks = len(blocks)
+        for block_num in range(0, num_blocks):
+            best_forward_index, forward_primer = \
+                get_best_scored_primer(blocks[block_num],'forward',
+                                       var_start, var_end)
+            best_reverse_index, reverse_primer = \
+                get_best_scored_primer(blocks[block_num], 'reverse',
+                                       var_start, var_end)
+            if forward_primer is None or reverse_primer is None:
+                # Could not find any primer within block variance
+                no_candidates = True
+                break
+            positions += [best_forward_index, best_reverse_index]
+            block_start = forward_primer.end + 1
+            block_end = reverse_primer.end -1
+            optimal_block = ScoredBlock(block_num, block_start, block_end,
+                                        forward_primer, reverse_primer)
+            subset.append(optimal_block)
+            total_score += (forward_primer.score + reverse_primer.score)
+            var_end = best_reverse_index + 1
+            var_start = max(0, best_reverse_index - maxvar)
+
+        if not no_candidates:
+            return total_score, subset, positions 
+        else:
+            return None, None, None 
+
+    maxvar = options.blocksizevar if options.blocksizevar is not None else 0
+    windows, blocks = get_block_primers(window_scores)
+    num_primers= len(window_scores) 
+    optimal_score = None
+    optimal_blocks = []
+    optimal_subset_start = 0
+    # Scan the primers within the maximum block size variance, and
+    # select the best scored primers of each direction. 
+    for start_index in range(0, num_primers):
+        score, subset, positions = get_subset_combination(
+                                        blocks, start_index, maxvar)
+        if subset:
+            window_selected = [windows[i] for i in positions]
+            logging.info('Subset start: %d, score: %d, window selected: %s' %
+                         (windows[start_index], score,
+                          ','.join([str(w) for w in window_selected])))
+            if optimal_score is None:
+                optimal_score = score
+                optimal_blocks = subset
+                optimal_subset_start = start_index
+            elif optimal_score > score:
+                optimal_score = score
+                optimal_blocks = subset
+                optimal_subset_start = start_index
+            elif optimal_score == score:
+                logging.info('%s subset start (%d) and subset start (%d)' %
+                             ('Tie for the optimal combination between',
+                              windows[start_index],
+                              windows[optimal_subset_start]))
+        else:
+            logging.info('Subset start: %d, Could not find primer.' %
+                         windows[start_index])
+
+    logging.info("Best combination: subset start (%d), score (%d)" %
+                  (windows[optimal_subset_start], optimal_score))
+    return optimal_blocks
+
 # given all the scores for each position of the sliding window, find the best one
 def get_best_window(options, window_scores):
     best_window = None
@@ -396,11 +592,19 @@ def print_best_primers(gene_name, exon_id, chr, exon_start, exon_end, scored_blo
 '''
 
 def print_best_primers(csv_file, gene_name, exon_id, chr, exon_start, exon_end, scored_blocks):
+    #print '%s, %s' % (gene_name, exon_id),
+    #for block in scored_blocks:
+    #    print '%d' % (block.end-block.start+1),
+    #    print '%d' % block.primer_forward.score,
+    #    print '%d' % block.primer_reverse.score,
+    #print '\n'
+    #return
     primer_name_prefix = gene_name + '_X' + str(exon_id) + '_'
     print('-' * banner_width)
     print('gene: %s, exon: %s, %s:%d-%d' % (gene_name, exon_id, chr, exon_start, exon_end))
     for block in scored_blocks:
-        print('block %d, %d-%d' % (block.block_num, block.start, block.end))
+        print('block %d, %d-%d, block size: %d' %
+              (block.block_num, block.start, block.end, block.end-block.start+1))
         forward = block.primer_forward
         print('forward: %d-%d, %s' % (forward.start, forward.end, forward.bases))
         print('forward hairpin score %d' % Hairpin(forward.bases).score())

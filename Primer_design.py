@@ -315,6 +315,8 @@ def score_exon_windows(options, chr, gene_name, exon_id, exon_start, exon_end):
 
 
 '''
+Choosing the optimal combination of primers within block size variance.
+
               |-------- block 0 --------|-------- block 1 --------|
               |---------------------------------------------------|
 window 1 ----\|                         |/----                    

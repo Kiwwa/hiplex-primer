@@ -260,16 +260,16 @@ def score_exon_windows(options, chr, gene_name, exon_id, exon_start, exon_end):
                 best_primer = None
                 for suffix_start in range(0, options.primervar):
                     primer_suffix = primer[suffix_start:]
-                    # filter primer
+                    filtered = False
                     if options.maxhairpinsize is not None:
                         filtered = filter_primer(options, 'hairpin',
                                                  primer_suffix)
-                        if filtered:
-                            logging.info("Filtered:  5'> %s <3'" %
-                                         primer_suffix)
-                            continue
                     primer_score = score_primer(options.melt, primer_suffix)
-                    logging.info("Score: %4d, 5'> %s <3'" % (primer_score, primer_suffix))
+                    if filtered:
+                        logging.info("Score: %4d, 5'> %s <3'\t=> Filtered due to %s" % (primer_score, primer_suffix, 'hairpin'))
+                        continue
+                    else:
+                        logging.info("Score: %4d, 5'> %s <3'" % (primer_score, primer_suffix))
                     # calculate the start position of this primer candidate
                     if direction == 'forward':
                         candidate_start = primer_start + suffix_start

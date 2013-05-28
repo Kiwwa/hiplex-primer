@@ -3,7 +3,7 @@
 '''
 Primer design program for amplicon sequencing.
 
-Authors: Bernie Pope, Danny Park, Tu Nguyen-Dumont.
+Authors: Bernie Pope, Danny Park, Tu Nguyen-Dumont, Sori Kang.
 '''
 
 from Bio import SeqIO
@@ -68,6 +68,17 @@ parser.add_argument('--blocksizevar',
                     metavar='B',
                     type=int,
                     help='block size variance')
+parser.add_argument('--scale',
+                    metavar='S',
+                    type=str,
+                    required=False,
+                    default='25 nmole',
+                    help='ordering scale for the oligos')
+parser.add_argument('--purification',
+                    required=False,
+                    default='Standard Desalting',
+                    choices=('Standard Desalting', 'HPLC'),
+                    help='purification')
 
 def main():
     options = parser.parse_args()
@@ -80,60 +91,47 @@ def main():
 
     logging.info('command line: {}'.format(' '.join(sys.argv)))
 
-    for gene_name, exon_id, coords in process_gene_file(options.genes):
-        try:
-            chr, exon_start, exon_end = parse_coords(coords)
-        except:
-            exit('bad coordinates: %s' % coords)
-        else:
-            # score all the sliding windows over this exon
-            window_scores = score_exon_windows(options, chr, gene_name, exon_id, exon_start, exon_end)
-            # find the best scoring window for this exon
-            # best_window = get_best_window(options, window_scores)
-            best_blocks = get_optimal_primer_combination(options, window_scores)
-            # print out the primers for the best window
-            if best_blocks is not None:
-                print_best_primers(options.idtfile, gene_name, exon_id, chr,
-                                   exon_start, exon_end, best_blocks)
-                #print_best_primers(options.idtfile, gene_name, exon_id, chr, exon_start, exon_end, window_scores[best_window])
-    #print_blocksize_distribution()
+    gene_file = GeneFile(options.genes)
+    for gene_name, exon_id, chr, exon_start, exon_end in gene_file.process():
+        # score all the sliding windows over this exon
+        window_scores = score_exon_windows(options, chr, gene_name, exon_id, exon_start, exon_end)
+        # find the best scoring window for this exon
+        # best_window = get_best_window(options, window_scores)
+        best_blocks = get_optimal_primer_combination(options, window_scores)
+        # print out the primers for the best window
+        if best_blocks is not None:
+            print_best_primers(options, gene_name, exon_id, chr,
+                               exon_start, exon_end, best_blocks)
+    gene_file.close()
 
-# parse the coordinates of a chromosome position in the format:
-# chr:start-end
-def parse_coords(coords):
-    chr, positions = coords.split(':')
-    start, end = positions.split('-')
-    return (chr, int(start), int(end))
 
-# read the contents of the exon file.
-# transpose columns to rows and parse the important fields.
-# correct the exon numbering so that they are sequential from the first numbered exon in a gene
-def process_gene_file(gene_filename):
-    with open(gene_filename, 'U') as gene_file:
-        reader = csv.reader(gene_file)
-        for row in itertools.izip_longest(*reader):
-            if len(row) >= 1:
-                gene_name = row[0]
-                index = 1
-                row_len = len(row)
-                # set exon_number to None to indicate that we haven't yet seen an exon for this gene
-                exon_number = None
-                while index < row_len:
-                    item = row[index]
-                    # find the start of the block of text that defines an exon for this gene
-                    if type(item) == str and item.startswith('Exon number:'):
-                        exon_number_words = item.split()
-                        if len(exon_number_words) == 3:
-                            # if this is the first exon in the gene, then use its number from the file
-                            if exon_number == None:
-                                exon_number = int(exon_number_words[2])
-                            # otherwise just increment the number from the previous exon to correct for possible mistakes in the file
-                            else:
-                                exon_number += 1
-                            if index+2 < row_len:
-                                coords = row[index+2]
-                                yield (gene_name, exon_number, coords)
-                    index += 1
+class GeneFile(object):
+    def __init__(self, filename):
+        self.file = open(filename, 'U')
+        # mapping from gene name to most recently used block number
+        # block numbers start at 1
+        self.gene_blocks = {}
+
+    def process(self):
+        for line in self.file:
+            fields = line.split()
+            chr, start, end, name = fields[0:4]
+            start = int(start)
+            end = int(end)
+            gene_name_parts = name.split(',')
+            if len(gene_name_parts) >= 2:
+                gene_name = gene_name_parts[0]
+            else:
+                gene_name = name
+            if gene_name in self.gene_blocks:
+                current_block_number = self.gene_blocks[gene_name]
+                self.gene_blocks[gene_name] = block_number = current_block_number + 1
+            else:
+                self.gene_blocks[gene_name] = block_number = 1
+            yield gene_name, block_number, chr, start, end
+
+    def close(self):
+        self.file.close()
 
 # width of banner message separator
 banner_width = 80
@@ -668,10 +666,9 @@ def print_blocksize_distribution():
     print '\t'.join([str(size) for size in distribution])
 
 
-
-def print_best_primers(csv_file, gene_name, exon_id, chr, exon_start, exon_end, scored_blocks):
-    #global block_sizes
-    primer_name_prefix = gene_name + '_X' + str(exon_id) + '_'
+def print_best_primers(options, gene_name, exon_id, chr, exon_start, exon_end, scored_blocks):
+    csv_file = options.idtfile 
+    primer_name_prefix = gene_name + '_' + str(exon_id) + '_'
     print('-' * banner_width)
     print('gene: %s, exon: %s, %s:%d-%d' % (gene_name, exon_id, chr, exon_start, exon_end))
     for block in scored_blocks:
@@ -687,9 +684,31 @@ def print_best_primers(csv_file, gene_name, exon_id, chr, exon_start, exon_end, 
         print('reverse hairpin score %d' % Hairpin(reverse.bases).score())
         primer_name_forward = primer_name_prefix + 'F' + str(block.block_num + 1)
         primer_name_reverse = primer_name_prefix + 'R' + str(block.block_num + 1)
-        csv_file.write(','.join([primer_name_forward, str(forward.bases), '250nM', 'HPLC']) + '\n')
-        csv_file.write(','.join([primer_name_reverse, str(reverse.bases), '250nM', 'HPLC']) + '\n')
+        csv_file.write(','.join([primer_name_forward, str(forward.bases), options.scale, options.purification]) + '\n')
+        csv_file.write(','.join([primer_name_reverse, str(reverse.bases), options.scale, options.purification]) + '\n')
         csv_file.flush()
+
+#def print_best_primers(csv_file, gene_name, exon_id, chr, exon_start, exon_end, scored_blocks):
+#    #global block_sizes
+#    primer_name_prefix = gene_name + '_X' + str(exon_id) + '_'
+#    print('-' * banner_width)
+#    print('gene: %s, exon: %s, %s:%d-%d' % (gene_name, exon_id, chr, exon_start, exon_end))
+#    for block in scored_blocks:
+#        block_size = block.end-block.start+1
+#        #block_sizes.append(block_size)
+#        print('block %d, %d-%d, block size: %d' %
+#              (block.block_num, block.start, block.end, block_size))
+#        forward = block.primer_forward
+#        print('forward: %d-%d, %s' % (forward.start, forward.end, forward.bases))
+#        print('forward hairpin score %d' % Hairpin(forward.bases).score())
+#        reverse = block.primer_reverse
+#        print('reverse: %d-%d, %s' % (reverse.start, reverse.end, reverse.bases))
+#        print('reverse hairpin score %d' % Hairpin(reverse.bases).score())
+#        primer_name_forward = primer_name_prefix + 'F' + str(block.block_num + 1)
+#        primer_name_reverse = primer_name_prefix + 'R' + str(block.block_num + 1)
+#        csv_file.write(','.join([primer_name_forward, str(forward.bases), '250nM', 'HPLC']) + '\n')
+#        csv_file.write(','.join([primer_name_reverse, str(reverse.bases), '250nM', 'HPLC']) + '\n')
+#        csv_file.flush()
 
 # a (possibly large) chunk of DNA from the reference
 class Region(object):

@@ -34,11 +34,34 @@
         <h3>
 <a name="how-to-design-primers-for-hi-plex" class="anchor" href="#how-to-design-primers-for-hi-plex"><span class="octicon octicon-link"></span></a>How to design primers for Hi-Plex</h3>
 
+<h4>
+<a name="1-download-the-hiplex-primer-software" class="anchor" href="#1-download-the-hiplex-primer-software"><span class="octicon octicon-link"></span></a>1. Download the Hiplex primer software.</h4>
+
+<p>You can download the software from <a href="https://github.com/bjpop/hiplex-primer/archive/master.zip">github</a>.</p>
+
+<h4>
+<a name="2-check-your-python-version" class="anchor" href="#2-check-your-python-version"><span class="octicon octicon-link"></span></a>2. Check your Python version.</h4>
+
+<p>Hiplex primer is designed to work with Python 2.6 or 2.7. It <em>will not</em> work with Python 3.</p>
+
+<h4>
+<a name="3-make-sure-biopython-is-installed-for-your-version-of-python" class="anchor" href="#3-make-sure-biopython-is-installed-for-your-version-of-python"><span class="octicon octicon-link"></span></a>3. Make sure BioPython is installed for your version of Python.</h4>
+
+<p><a href="http://biopython.org/DIST/docs/install/Installation.html">Instructions for installing BioPython</a>.</p>
+
+<h4>
+<a name="4-download-a-copy-of-all-the-chromosome-reference-files-in-fasta-format" class="anchor" href="#4-download-a-copy-of-all-the-chromosome-reference-files-in-fasta-format"><span class="octicon octicon-link"></span></a>4. Download a copy of all the chromosome reference files in FASTA format.</h4>
+
+<p>Create a folder containing all the chromosome reference files in fasta format. This is the <code>--refdir</code> argument in the command line. In our example, this folder is called <code>primer_finder_data</code> and looks like so:</p>
+
+<pre><code>chr1.fa
+chr2.fa
+chr3.fa
+</code></pre>
+
+<p>etcetera.</p>
+
 <ol>
-<li>Download Hiplex primers from github: <a href="https://github.com/bjpop/hiplex-primer/archive/master.zip">https://github.com/bjpop/hiplex-primer/archive/master.zip</a>
-</li>
-<li>Make sure you run python version 2.7 or 2.6 and that you have installed BioPython.</li>
-<li>Create a folder containing all the chromosome reference files in fasta format. This is the <code>--refdir</code> argument in the command line. In our example, this folder is called primer_finder_data and looks like so:</li>
 <li>The input file is a tab-separated file, listing all the target regions in a bed file-type format. There is one column for the chromosome number, one column for the starting coordinate of the target region, and one column for the end coordinate. The fourth column should list the gene/region name. This is important, as it is used by the software to determine primer names. This is called <code>--genes</code> in the command line. In our example, this file is called exon_list.txt and looks like so:</li>
 <li>When in the directory where the software has been downloaded, run the following command (the values are indicative only and should be tailored to the user needs):</li>
 </ol><pre><code>./Primer_design.py --refdir &lt;dir containing references in fasta format&gt;

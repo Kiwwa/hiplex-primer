@@ -55,9 +55,9 @@
 <p>Hiplex-primer has been tested with <a href="http://hgdownload.cse.ucsc.edu/goldenPath/hg19/chromosomes/">the UCSC hg19 Human Genome Reference</a>. Hiplex-primer requires each chromosome is stored in a separate file (chr1.fa, chr2.fa etcetera). Hiplex-primer should work with other species equally well; you just need to download the appropriate <a href="http://hgdownload.soe.ucsc.edu/downloads.html">reference sequence</a>. The name of the directory containing your reference files is specified using the --refdir command line parameter for Hiplex-primer.</p>
 
 <h4>
-<a name="5-create-a-bed-file-specifying-the-target-regions" class="anchor" href="#5-create-a-bed-file-specifying-the-target-regions"><span class="octicon octicon-link"></span></a>5. Create a bed file specifying the target regions.</h4>
+<a name="5-create-a-file-specifying-the-target-regions" class="anchor" href="#5-create-a-file-specifying-the-target-regions"><span class="octicon octicon-link"></span></a>5. Create a file specifying the target regions.</h4>
 
-<p>This input is tab-separated file, listing all the target regions. There is one column for the chromosome number, one column for the starting coordinate of the target region, and one column for the end coordinate. The fourth column should list the gene/region name. This is important, as it is used by the software to determine primer names.</p>
+<p>This input is tab-separated file, similar to bed format, which lists all the target regions. There is one column for the chromosome number, one column for the starting coordinate of the target region, and one column for the end coordinate. The fourth column should list the gene/region name. This is important, as it is used by the software to determine primer names.</p>
 
 <p>Here is the contents of such a file:</p>
 
@@ -76,7 +76,7 @@ chr17   41215344    41215395    BRCA1,NM_007300
 chr17   41215885    41215973    BRCA1,NM_007300
 </code></pre>
 
-<p>The name of the bed file is specified using the --genes command line parameter for Hiplex-primer.</p>
+<p>The name of the file is specified using the --genes command line parameter for Hiplex-primer.</p>
 
 <h4>
 <a name="5-you-can-run-hiplex-primer-from-the-directory-where-you-downloaded-it" class="anchor" href="#5-you-can-run-hiplex-primer-from-the-directory-where-you-downloaded-it"><span class="octicon octicon-link"></span></a>5. You can run Hiplex-primer from the directory where you downloaded it.</h4>
@@ -178,7 +178,7 @@ Score:  196,       5'&gt; CGAATGCGTCCCTCGCAAGTCAGG &lt;3'
 
 <p>In this example, we have saved the reference fasta files in the directory called primer_finder_data. Our target region list is a file called genes_coords.tsv. We have set the primer-intervening sequence to 100 bases, the maximum primer size is 30 bases, we are allowing primer length to vary by 10 bases, we are allowing for a buffer of 8 additional bases on each side of the target regions listed in genes_coords.tsv in order to account for splice sites, we have set our optimum melting temperature to 64ºC, the log file is called genes_coords.log, we do not allow for primer-intervening sequence to vary in size, we want to order our oligos in the 25 nmole scale, with standard purification.</p>
 
-<p>The output primers will be saved in a file called gene.idt.csv. Here is a small example of what the file will look like:</p>
+<p>The output primers will be saved in a file called gene.idt.csv. Here is a small example of what the file will look like (you can open this file in a spreadsheet application, such as Excel):</p>
 
 <pre><code>CDH1,NM_004360_1_F1,AGCCCGGCCCGACCCGACCGC,25nmole,Standard Desalting
 CDH1,NM_004360_1_R1,AATGCGTCCCTCGCAAGTCAG,25nmole,Standard Desalting

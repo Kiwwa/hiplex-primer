@@ -71,14 +71,20 @@ parser.add_argument('--blocksizevar',
 parser.add_argument('--scale',
                     metavar='S',
                     type=str,
-                    required=False,
                     default='25 nmole',
                     help='ordering scale for the oligos')
 parser.add_argument('--purification',
-                    required=False,
                     default='Standard Desalting',
                     choices=('Standard Desalting', 'HPLC'),
                     help='purification')
+parser.add_argument('--senseheelseq',
+                    metavar='SH',
+                    type=str,
+                    help='Sense strand primer heel sequence')
+parser.add_argument('--antisenseheelseq',
+                    metavar='AH',
+                    type=str,
+                    help='Sense strand primer heel sequence')
 
 def main():
     options = parser.parse_args()
@@ -672,14 +678,20 @@ def print_best_primers(options, gene_name, exon_id, chr, exon_start, exon_end, s
     print('-' * banner_width)
     print('gene: %s, exon: %s, %s:%d-%d' % (gene_name, exon_id, chr, exon_start, exon_end))
     for block in scored_blocks:
+        forward = block.primer_forward
+        reverse = block.primer_reverse
+
+        if options.senseheelseq is not None:
+            forward.bases = str(forward.bases) + options.senseheelseq 
+        if options.antisenseheelseq is not None:
+            reverse.bases = str(reverse.bases) + options.antisenseheelseq
+
         block_size = block.end-block.start+1
         #block_sizes.append(block_size)
         print('block %d, %d-%d, block size: %d' %
               (block.block_num, block.start, block.end, block_size))
-        forward = block.primer_forward
         print('forward: %d-%d, %s' % (forward.start, forward.end, forward.bases))
         print('forward hairpin score %d' % Hairpin(forward.bases).score())
-        reverse = block.primer_reverse
         print('reverse: %d-%d, %s' % (reverse.start, reverse.end, reverse.bases))
         print('reverse hairpin score %d' % Hairpin(reverse.bases).score())
         primer_name_forward = primer_name_prefix + 'F' + str(block.block_num + 1)

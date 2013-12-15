@@ -682,9 +682,9 @@ def print_best_primers(options, gene_name, exon_id, chr, exon_start, exon_end, s
         reverse = block.primer_reverse
 
         if options.senseheelseq is not None:
-            forward.bases = str(forward.bases) + options.senseheelseq 
+            forward.bases = options.senseheelseq + str(forward.bases)
         if options.antisenseheelseq is not None:
-            reverse.bases = str(reverse.bases) + options.antisenseheelseq
+            reverse.bases = options.antisenseheelseq + str(reverse.bases)
 
         block_size = block.end-block.start+1
         #block_sizes.append(block_size)

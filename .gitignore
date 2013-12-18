@@ -1,0 +1,6 @@
+*.log
+*.csv
+*.tsv
+*.txt
+*.fa
+runner.py

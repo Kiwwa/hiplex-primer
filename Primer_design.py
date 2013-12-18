@@ -103,15 +103,15 @@ def main():
     logging.info('command line: {}'.format(' '.join(sys.argv)))
 
     gene_file = GeneFile(options.genes)
-    for gene_name, exon_id, chr, exon_start, exon_end in gene_file.process():
+    for gene_name, exon_id, chromosome, exon_start, exon_end in gene_file.process():
         # score all the sliding windows over this exon
-        window_scores = score_exon_windows(options, chr, gene_name, exon_id, exon_start, exon_end)
+        window_scores = score_exon_windows(options, chromosome, gene_name, exon_id, exon_start, exon_end)
         # find the best scoring window for this exon
         # best_window = get_best_window(options, window_scores)
         best_blocks = get_optimal_primer_combination(options, window_scores)
         # print out the primers for the best window
         if best_blocks is not None:
-            print_best_primers(options, gene_name, exon_id, chr,
+            print_best_primers(options, gene_name, exon_id, chromosome,
                                exon_start, exon_end, best_blocks)
     gene_file.close()
 
@@ -127,7 +127,7 @@ class GeneFile(object):
     def process(self):
         for line in self.file:
             fields = line.split()
-            chr, start, end, name = fields[0:4]
+            chromosome, start, end, name = fields[0:4]
             start = int(start)
             end = int(end)
             gene_name_parts = name.split(',')
@@ -140,7 +140,7 @@ class GeneFile(object):
                 self.gene_blocks[gene_name] = block_number = current_block_number + 1
             else:
                 self.gene_blocks[gene_name] = block_number = 1
-            yield gene_name, block_number, chr, start, end
+            yield gene_name, block_number, chromosome, start, end
 
     def close(self):
         self.file.close()
@@ -197,7 +197,7 @@ class ScoredPrimer(object):
 # we find the best primers for each block in that position.
 
 
-def score_exon_windows(options, chr, gene_name, exon_id, exon_start, exon_end):
+def score_exon_windows(options, chromosome, gene_name, exon_id, exon_start, exon_end):
     exon_size = (exon_end - exon_start) + 1
     # add the splice buffer on to the start and end of the exon coordinates
     exon_buffer_start = exon_start - options.splicebuffer
@@ -211,7 +211,7 @@ def score_exon_windows(options, chr, gene_name, exon_id, exon_start, exon_end):
     region_end = exon_buffer_end + slack + options.maxprimersize
 
     logging.info('*' * banner_width)
-    logging.info('chrom:\t\t%s' % chr)
+    logging.info('chrom:\t\t%s' % chromosome)
     logging.info('exon:\t\t%s' % exon_id)
     logging.info('exon start:\t%d' % exon_start)
     logging.info('exon buff start:%d' % exon_buffer_start)
@@ -226,7 +226,7 @@ def score_exon_windows(options, chr, gene_name, exon_id, exon_start, exon_end):
     logging.info('region_start:\t%d' % region_start)
     logging.info('region_end:\t%d' % region_end)
 
-    region = get_region(options, chr, region_start, region_end)
+    region = get_region(options, chromosome, region_start, region_end)
 
     # get the first and last 5 bases in the region so we can print it out for diagnostic purposes.
     if len(region.bases) > 10:
@@ -652,9 +652,9 @@ def check_filter(options, scoredBlocks):
     return filtered, reason
 
 '''
-def print_best_primers(gene_name, exon_id, chr, exon_start, exon_end, scored_blocks):
+def print_best_primers(gene_name, exon_id, chromosome, exon_start, exon_end, scored_blocks):
     print('-' * banner_width)
-    print('gene: %s, exon: %s, %s:%d-%d' % (gene_name, exon_id, chr, exon_start, exon_end))
+    print('gene: %s, exon: %s, %s:%d-%d' % (gene_name, exon_id, chromosome, exon_start, exon_end))
     for block in scored_blocks:
         print('block %d, %d-%d' % (block.block_num, block.start, block.end))
         forward = block.primer_forward
@@ -691,13 +691,19 @@ def print_blocksize_distribution():
         print '\t'.join(ys)
     print '\t'.join([str(size) for size in distribution])
 
+<<<<<<< HEAD
 def print_best_primers(options, gene_name, exon_id, chr, exon_start, exon_end, scored_blocks):
     csv_file = options.idtfile
     rover_file = options.roverfile
 
+=======
+def print_best_primers(options, gene_name, exon_id, chromosome, exon_start, exon_end, scored_blocks):
+    csv_file = options.idtfile 
+    rover_file = open('rover_input.tsv', 'a')
+>>>>>>> Renamed chr variable to chromosome
     primer_name_prefix = gene_name + '_' + str(exon_id) + '_'
     print('-' * banner_width)
-    print('gene: %s, exon: %s, %s:%d-%d' % (gene_name, exon_id, chr, exon_start, exon_end))
+    print('gene: %s, exon: %s, %s:%d-%d' % (gene_name, exon_id, chromosome, exon_start, exon_end))
     for block in scored_blocks:
         forward = block.primer_forward
         reverse = block.primer_reverse
@@ -723,14 +729,14 @@ def print_best_primers(options, gene_name, exon_id, chr, exon_start, exon_end, s
         
         # generate the ROVER compatible input file (tab delimited format)
         # (compliant to BED file format)
-        rover_file.write(chr + '\t' + str(block.start) + '\t' + str(block.end) + '\n')
+        rover_file.write(chromosome + '\t' + str(block.start) + '\t' + str(block.end) + '\n')
         rover_file.flush()
 
-# def print_best_primers(csv_file, gene_name, exon_id, chr, exon_start, exon_end, scored_blocks):
+# def print_best_primers(csv_file, gene_name, exon_id, chromosome, exon_start, exon_end, scored_blocks):
 # global block_sizes
 #    primer_name_prefix = gene_name + '_X' + str(exon_id) + '_'
 #    print('-' * banner_width)
-#    print('gene: %s, exon: %s, %s:%d-%d' % (gene_name, exon_id, chr, exon_start, exon_end))
+#    print('gene: %s, exon: %s, %s:%d-%d' % (gene_name, exon_id, chromosome, exon_start, exon_end))
 #    for block in scored_blocks:
 #        block_size = block.end-block.start+1
 # block_sizes.append(block_size)
@@ -753,8 +759,8 @@ def print_best_primers(options, gene_name, exon_id, chr, exon_start, exon_end, s
 
 class Region(object):
 
-    def __init__(self, chr, start, end, file, bases):
-        self.chr = chr
+    def __init__(self, chromosome, start, end, file, bases):
+        self.chromosome = chromosome
         self.start = start
         self.end = end
         self.file = file
@@ -764,9 +770,9 @@ class Region(object):
 # so we need to convert here
 
 
-def get_region(options, chr, start, end):
-    ref_filename = os.path.join(options.refdir, chr + ".fa")
-    logging.info("Reading region on %s, start: %d, end: %d from file %s" % (chr, start, end, ref_filename))
+def get_region(options, chromosome, start, end):
+    ref_filename = os.path.join(options.refdir, chromosome + ".fa")
+    logging.info("Reading region on %s, start: %d, end: %d from file %s" % (chromosome, start, end, ref_filename))
     with open(ref_filename) as ref_file:
         # XXX should really cache this
         bases_list = list(SeqIO.parse(ref_file, "fasta"))
@@ -777,9 +783,9 @@ def get_region(options, chr, start, end):
                 segment = bases[start - 1:end].seq
                 normalised_segment = segment.upper()
                 validate_sequence(normalised_segment)
-                return Region(chr, start, end, ref_filename, normalised_segment)
+                return Region(chromosome, start, end, ref_filename, normalised_segment)
             else:
-                exit("chromosome %s does not span %d %d" % (chr, start, end))
+                exit("chromosome %s does not span %d %d" % (chromosome, start, end))
         exit("got wrong number of sequences in bases_list: %d" % len(bases_list))
 
 

@@ -671,7 +671,6 @@ def print_blocksize_distribution():
         print '\t'.join(ys)
     print '\t'.join([str(size) for size in distribution])
 
-
 def print_best_primers(options, gene_name, exon_id, chr, exon_start, exon_end, scored_blocks):
     csv_file = options.idtfile 
     primer_name_prefix = gene_name + '_' + str(exon_id) + '_'
@@ -691,9 +690,9 @@ def print_best_primers(options, gene_name, exon_id, chr, exon_start, exon_end, s
         print('block %d, %d-%d, block size: %d' %
               (block.block_num, block.start, block.end, block_size))
         print('forward: %d-%d, %s' % (forward.start, forward.end, forward.bases))
-        print('forward hairpin score %d' % Hairpin(forward.bases).score())
+        print('forward hairpin score %d' % Hairpin(forward.bases.upper()).score()) #uppercase required as hairpin.score() function needs uppercase letters
         print('reverse: %d-%d, %s' % (reverse.start, reverse.end, reverse.bases))
-        print('reverse hairpin score %d' % Hairpin(reverse.bases).score())
+        print('reverse hairpin score %d' % Hairpin(reverse.bases.upper()).score())
         primer_name_forward = primer_name_prefix + 'F' + str(block.block_num + 1)
         primer_name_reverse = primer_name_prefix + 'R' + str(block.block_num + 1)
         csv_file.write(','.join([primer_name_forward, str(forward.bases), options.scale, options.purification]) + '\n')

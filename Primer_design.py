@@ -3,7 +3,7 @@
 '''
 Primer design program for amplicon sequencing.
 
-Authors: Bernie Pope, Danny Park, Tu Nguyen-Dumont, Sori Kang.
+Authors: Bernie Pope, Danny Park, Tu Nguyen-Dumont, Sori Kang, Luke Shillabeer
 '''
 
 from Bio import SeqIO
@@ -15,12 +15,14 @@ import itertools
 import argparse
 import logging
 
-parser = argparse.ArgumentParser(description='A primer design tool for amplicon sequencing')
+parser = argparse.ArgumentParser(description='A primer design tool for '
+                                             'amplicon sequencing')
 parser.add_argument('--refdir',
                     metavar='REF',
                     type=str,
                     required=True,
-                    help='directory containing reference files for each chromosome in fasta format')
+                    help='directory containing reference files for each '
+                         'chromosome in fasta format')
 parser.add_argument('--genes',
                     metavar='GENES',
                     type=str,
@@ -98,21 +100,36 @@ def main():
         logging.basicConfig(filename=options.log,
                             level=logging.DEBUG,
                             filemode='w',
-                            format='%(message)s',)
+                            format='%(message)s')
 
     logging.info('command line: {}'.format(' '.join(sys.argv)))
 
     gene_file = GeneFile(options.genes)
-    for gene_name, exon_id, chromosome, exon_start, exon_end in gene_file.process():
+    for (gene_name,
+         exon_id,
+         chromosome,
+         exon_start,
+         exon_end) \
+    in gene_file.process():
         # score all the sliding windows over this exon
-        window_scores = score_exon_windows(options, chromosome, gene_name, exon_id, exon_start, exon_end)
+        window_scores = score_exon_windows(options,
+                                           chromosome,
+                                           gene_name,
+                                           exon_id,
+                                           exon_start,
+                                           exon_end)
         # find the best scoring window for this exon
         # best_window = get_best_window(options, window_scores)
         best_blocks = get_optimal_primer_combination(options, window_scores)
         # print out the primers for the best window
         if best_blocks is not None:
-            print_best_primers(options, gene_name, exon_id, chromosome,
-                               exon_start, exon_end, best_blocks)
+            print_best_primers(options,
+                               gene_name,
+                               exon_id,
+                               chromosome,
+                               exon_start,
+                               exon_end,
+                               best_blocks)
     gene_file.close()
 
 
@@ -137,7 +154,9 @@ class GeneFile(object):
                 gene_name = name
             if gene_name in self.gene_blocks:
                 current_block_number = self.gene_blocks[gene_name]
-                self.gene_blocks[gene_name] = block_number = current_block_number + 1
+                self.gene_blocks[gene_name] = \
+                               block_number = \
+                               current_block_number + 1
             else:
                 self.gene_blocks[gene_name] = block_number = 1
             yield gene_name, block_number, chromosome, start, end
@@ -152,7 +171,8 @@ banner_width = 80
 class ScoredBlock(object):
 
     def __init__(self, block_num, start, end, primer_forward, primer_reverse):
-        self.block_num = block_num  # sequential number of the block in the window
+        # sequential number of the block in the window
+        self.block_num = block_num
         self.start = start  # first coordinate in the block
         self.end = end     # last coordinate in the block
         self.primer_forward = primer_forward
@@ -197,16 +217,25 @@ class ScoredPrimer(object):
 # we find the best primers for each block in that position.
 
 
-def score_exon_windows(options, chromosome, gene_name, exon_id, exon_start, exon_end):
+def score_exon_windows(options,
+                       chromosome,
+                       gene_name,
+                       exon_id,
+                       exon_start,
+                       exon_end):
     exon_size = (exon_end - exon_start) + 1
+
     # add the splice buffer on to the start and end of the exon coordinates
     exon_buffer_start = exon_start - options.splicebuffer
     exon_buffer_end = exon_end + options.splicebuffer
     exon_buffer_size = (exon_buffer_end - exon_buffer_start) + 1
-    num_blocks = int(math.ceil(float(exon_buffer_size) / float(options.blocksize)))
+    num_blocks = (int(math.ceil
+                        (float(exon_buffer_size) / float(options.blocksize))))
     window_size = num_blocks * options.blocksize
     slack = window_size - exon_buffer_size
-    # the region must include the exon, plus the splice buffer, plus slack on either side, plus maximum primers on either side
+
+    # the region must include the exon, plus the splice buffer,
+    # plus slack on either side, plus maximum primers on either side
     region_start = exon_buffer_start - slack - options.maxprimersize
     region_end = exon_buffer_end + slack + options.maxprimersize
 
@@ -228,21 +257,31 @@ def score_exon_windows(options, chromosome, gene_name, exon_id, exon_start, exon
 
     region = get_region(options, chromosome, region_start, region_end)
 
-    # get the first and last 5 bases in the region so we can print it out for diagnostic purposes.
+    # get the first and last 5 bases in the region so we can print it
+    # out for diagnostic purposes.
     if len(region.bases) > 10:
         region_start_bases = region.bases[0:5]
         region_end_bases = region.bases[-5:]
-        logging.info('region starts with: %s, region ends with: %s' % (region_start_bases, region_end_bases))
+        logging.info(('region starts with: %s, region ends with: %s'
+                      % (region_start_bases, region_end_bases)))
 
     window_scores = {}
     window_count = 1
-    # slide the window over the exon, starting "slack" number of positions before the start of the exon (with splice buffer added).
-    # the last position of the window is when it lines up with the start of the exon.
-    for window_start in range(exon_buffer_start - slack, exon_buffer_start + 1):
+
+    # slide the window over the exon, starting "slack" number of positions
+    # before the start of the exon (with splice buffer added). The last
+    # position of the window is when it lines up with the start of the exon.
+    for window_start \
+    in range(exon_buffer_start - slack, exon_buffer_start + 1):
         logging.info('=' * banner_width)
-        logging.info("Scoring window starting at %d (%d/%d)" % (window_start, window_count, slack + 1))
+        logging.info(('Scoring window starting at %d (%d/%d)'
+                      % (window_start,
+                         window_count,
+                         slack + 1)))
         window_scores[window_start] = []
-        # score each block in the window, trying the different primer sizes at each end
+
+        # score each block in the window, trying the different primer
+        # sizes at each end.
         for block_num in range(0, num_blocks):
             block_start = window_start + (block_num * options.blocksize)
             block_end = block_start + options.blocksize - 1
@@ -252,15 +291,15 @@ def score_exon_windows(options, chromosome, gene_name, exon_id, exon_start, exon
             logging.info('block start:\t%d' % block_start)
             logging.info('block end:\t%d' % block_end)
 
-            # find the best primer for either the start or the end of a block
+            # find the best primer for either the start or the end of a block.
             def find_best_primer(direction, primer_end):
 
                 logging.info('~' * (banner_width / 2))
-                logging.info("Primer dir:\t%s" % direction)
-                if direction == "forward":
+                logging.info('Primer dir:\t%s' % direction)
+                if direction == 'forward':
                     primer_start = (primer_end - options.maxprimersize) + 1
                     primer = get_primer(region, primer_start, primer_end)
-                elif direction == "reverse":
+                elif direction == 'reverse':
                     primer_start = (primer_end + options.maxprimersize) - 1
                     # the reverse primer comes from the opposite strand
                     primer = get_primer(region, primer_end, primer_start)
@@ -274,30 +313,38 @@ def score_exon_windows(options, chromosome, gene_name, exon_id, exon_start, exon
                 # check that the primer length is what we believe it to be
                 assert primer_len == (abs(primer_end - primer_start) + 1)
 
-                # score all suffixes of the primer (we try the first N suffixes, where N = primer_variance)
+                # score all suffixes of the primer (we try the first N
+                # suffixes, where N = primer_variance)
                 best_primer = None
                 for suffix_start in range(0, options.primervar):
                     primer_suffix = primer[suffix_start:]
                     filtered = False
                     if options.maxhairpinsize is not None:
-                        filtered = filter_primer(options, 'hairpin',
+                        filtered = filter_primer(options,
+                                                 'hairpin',
                                                  primer_suffix)
                     primer_score = score_primer(options.melt, primer_suffix)
                     if filtered:
-                        logging.info("Score: %4d, %s5'> %s <3', Filtered (%s)" %
-                                     (primer_score, ' ' * suffix_start, primer_suffix,
-                                      'hairpin'))
+                        logging.info(("Score: %4d, %s5'> %s <3', Filtered (%s)"
+                                      % (primer_score,
+                                         ' ' * suffix_start,
+                                         primer_suffix,
+                                         'hairpin')))
                         continue
                     else:
-                        logging.info("Score: %4d, %s5'> %s <3'" %
-                                     (primer_score, ' ' * suffix_start, primer_suffix))
+                        logging.info(("Score: %4d, %s5'> %s <3'"
+                                      % (primer_score,
+                                         ' ' * suffix_start,
+                                         primer_suffix)))
                     # calculate the start position of this primer candidate
                     if direction == 'forward':
                         candidate_start = primer_start + suffix_start
                     elif direction == 'reverse':
                         candidate_start = primer_start - suffix_start
-                    candidate = ScoredPrimer(primer_score, direction,
-                                             candidate_start, primer_end,
+                    candidate = ScoredPrimer(primer_score,
+                                             direction,
+                                             candidate_start,
+                                             primer_end,
                                              primer_suffix)
                     if best_primer == None:
                         # this is the first one we've seen
@@ -320,9 +367,13 @@ def score_exon_windows(options, chromosome, gene_name, exon_id, exon_start, exon
             # indicate the primer position
             primer_forward = find_best_primer('forward', block_start - 1)
             primer_reverse = find_best_primer('reverse', block_end + 1)
+
             # Add primer even though it is None
-            block_score = ScoredBlock(block_num, block_start, block_end,
-                                      primer_forward, primer_reverse)
+            block_score = ScoredBlock(block_num,
+                                      block_start,
+                                      block_end,
+                                      primer_forward,
+                                      primer_reverse)
             window_scores[window_start].append(block_score)
 #            if primer_forward != None and primer_reverse != None:
                 #block_score = (block, block_start, block_end, primer_forward, primer_reverse)
@@ -483,7 +534,8 @@ def get_optimal_primer_combination(options, window_scores):
                     optimal_reverse = (r_pos, r_primer)
         return optimal_forward, optimal_reverse
 
-    def get_subset_combination(blocks, num_blocks, start_index, block_size, maxvar):
+    def get_subset_combination(blocks, num_blocks, start_index,
+                               block_size, maxvar):
         # Find the best combination of primers within
         # (start_index ~ start_index + maxvar)
         # If there is no primers for any block and any direction,
@@ -496,27 +548,32 @@ def get_optimal_primer_combination(options, window_scores):
         positions = []
         #no_candidates = False
         for block_num in range(0, num_blocks):
-            best_forward_primers = \
-                get_best_scored_primer(blocks[block_num], 'forward',
-                                       var_start, var_end)
-            best_reverse_primers = \
-                get_best_scored_primer(blocks[block_num], 'reverse',
-                                       var_start, var_end)
+            best_forward_primers = get_best_scored_primer(blocks[block_num],
+                                                         'forward',
+                                                         var_start,
+                                                         var_end)
+            best_reverse_primers = get_best_scored_primer(blocks[block_num],
+                                                         'reverse',
+                                                         var_start,
+                                                         var_end)
             if not best_forward_primers or not best_reverse_primers:
                 # Could not find any primer within block variance
                 #no_candidate = True
                 break
             best_forward, best_reverse = get_optimal_distance_pair(
-                best_forward_primers,
-                best_reverse_primers,
-                block_size)
+                                                    best_forward_primers,
+                                                    best_reverse_primers,
+                                                    block_size)
             best_forward_index, forward_primer = best_forward
             best_reverse_index, reverse_primer = best_reverse
             positions += [best_forward_index, best_reverse_index]
             block_start = forward_primer.end + 1
             block_end = reverse_primer.end - 1
-            optimal_block = ScoredBlock(block_num, block_start, block_end,
-                                        forward_primer, reverse_primer)
+            optimal_block = ScoredBlock(block_num,
+                                        block_start,
+                                        block_end,
+                                        forward_primer,
+                                        reverse_primer)
             subset.append(optimal_block)
             total_score += (forward_primer.score + reverse_primer.score)
             # Need to adjust the var_start and var_end, since
@@ -544,9 +601,10 @@ def get_optimal_primer_combination(options, window_scores):
             options.blocksize, maxvar)
         if subset:
             window_selected = [windows[i] for i in positions]
-            logging.info('Subset start: %d, score: %d, window selected: %s' %
-                         (windows[start_index], score,
-                          ','.join([str(w) for w in window_selected])))
+            logging.info('Subset start: %d, score: %d, window selected: %s'
+                         % (windows[start_index],
+                            score,
+                            ','.join([str(w) for w in window_selected])))
             if optimal_score is None:
                 optimal_score = score
                 optimal_blocks = subset
@@ -556,18 +614,19 @@ def get_optimal_primer_combination(options, window_scores):
                 optimal_blocks = subset
                 optimal_subset_start = start_index
             elif optimal_score == score:
-                logging.info('%s subset start (%d) and subset start (%d)' %
-                             ('Tie for the optimal combination between',
-                              windows[start_index],
-                              windows[optimal_subset_start]))
+                logging.info('%s subset start (%d) and subset start (%d)'
+                             % ('Tie for the optimal combination between',
+                                windows[start_index],
+                                windows[optimal_subset_start]))
         else:
-            logging.info('Subset start: %d, Could not find primer.' %
-                         windows[start_index])
+            logging.info('Subset start: %d, Could not find primer.'
+                         % windows[start_index])
     if optimal_score is None:
-        logging.info("Could not find primer pairs because there may not be any candidate primers.")
+        logging.info('Could not find primer pairs because there may not be '
+                     'any candidate primers.')
     else:
-        logging.info("Best combination: subset start (%d), score (%d)" %
-                     (windows[optimal_subset_start], optimal_score))
+        logging.info('Best combination: subset start (%d), score (%d)'
+                     % (windows[optimal_subset_start], optimal_score))
     return optimal_blocks
 
 # given all the scores for each position of the sliding window, find the best one
@@ -580,24 +639,26 @@ def get_best_window(options, window_scores):
         # Check Filter
         filtered, reason = check_filter(options, scoredBlocks)
         if filtered:
-            logging.info("Window: %d is filtered due to %s." % (window, reason))
+            logging.info('Window: %d is filtered due to %s.'
+                         % (window, reason))
             continue
         total_score = get_total_window_score(scoredBlocks)
-        logging.info("Window: %d, total score: %d" % (window, total_score))
+        logging.info('Window: %d, total score: %d' % (window, total_score))
         if best_window == None:
             # this is the first one we've seen
             best_window = window
             best_score = total_score
         elif total_score == best_score:
             # XXX we have a tie for the best, what to do?
-            logging.info("Tie for best window between %d and %d" % (best_window, window))
+            logging.info('Tie for best window between %d and %d'
+                         % (best_window, window))
         elif total_score < best_score:
             best_window = window
             best_score = total_score
     if best_window is None:
-        logging.info("Could not find the best window.")
+        logging.info('Could not find the best window.')
     else:
-        logging.info("Best window: %d, score: %d" % (best_window, best_score))
+        logging.info('Best window: %d, score: %d' % (best_window, best_score))
         check_potential_issues(window_scores[best_window])
     return best_window
 
@@ -616,16 +677,16 @@ def check_potential_issues(scoredBlocks):
         reverse_hairpin = Hairpin(block.primer_reverse.bases)
         if forward_hairpin.score() >= 5 or reverse_hairpin.score() >= 5:
             logging.info('+' * banner_width)
-            logging.info("Potential issues.")
-            logging.info("block num: %s, start: %s, end: %s" %
+            logging.info('Potential issues.')
+            logging.info('block num: %s, start: %s, end: %s' %
                          (block.block_num, block.start, block.end))
         if forward_hairpin.score() >= 5:
-            logging.info("Forward primer %s has hairpin with length of %s."
+            logging.info('Forward primer %s has hairpin with length of %s.'
                          % (block.primer_forward.bases,
                             forward_hairpin.score()))
             logging.info(forward_hairpin.print_hairpin())
         if reverse_hairpin.score() >= 5:
-            logging.info("Reverse primer %s has hairpin with length of %s."
+            logging.info('Reverse primer %s has hairpin with length of %s.'
                          % (block.primer_reverse.bases,
                             reverse_hairpin.score()))
             logging.info(reverse_hairpin.print_hairpin())
@@ -691,22 +752,25 @@ def print_blocksize_distribution():
         print '\t'.join(ys)
     print '\t'.join([str(size) for size in distribution])
 
-<<<<<<< HEAD
-def print_best_primers(options, gene_name, exon_id, chr, exon_start, exon_end, scored_blocks):
-    csv_file = options.idtfile
-    rover_file = options.roverfile
 
-=======
-def print_best_primers(options, gene_name, exon_id, chromosome, exon_start, exon_end, scored_blocks):
-    csv_file = options.idtfile 
+def print_best_primers(options, gene_name, exon_id, chromosome,
+                       exon_start, exon_end, scored_blocks):
+    csv_file = options.idtfile
     rover_file = open('rover_input.tsv', 'a')
->>>>>>> Renamed chr variable to chromosome
+    
     primer_name_prefix = gene_name + '_' + str(exon_id) + '_'
     print('-' * banner_width)
-    print('gene: %s, exon: %s, %s:%d-%d' % (gene_name, exon_id, chromosome, exon_start, exon_end))
+    print('gene: %s, exon: %s, %s:%d-%d' % (gene_name, exon_id, chromosome,
+                                            exon_start, exon_end))
     for block in scored_blocks:
+
+        block_size = block.end - block.start + 1
         forward = block.primer_forward
         reverse = block.primer_reverse
+
+        # required for hairpin scores (currently requires upper bases)
+        fwd_upper_bases = forward.bases.upper()
+        rev_upper_bases = reverse.bases.upper()
 
         if options.senseheelseq is not None:
             forward.bases = options.senseheelseq + str(forward.bases)
@@ -715,44 +779,40 @@ def print_best_primers(options, gene_name, exon_id, chromosome, exon_start, exon
 
         block_size = block.end-block.start+1
         #block_sizes.append(block_size)
-        print('block %d, %d-%d, block size: %d' %
-              (block.block_num, block.start, block.end, block_size))
-        print('forward: %d-%d, %s' % (forward.start, forward.end, forward.bases))
-        print('forward hairpin score %d' % Hairpin(forward.bases.upper()).score()) #uppercase required as hairpin.score() function needs uppercase letters
-        print('reverse: %d-%d, %s' % (reverse.start, reverse.end, reverse.bases))
-        print('reverse hairpin score %d' % Hairpin(reverse.bases.upper()).score())
-        primer_name_forward = primer_name_prefix + 'F' + str(block.block_num + 1)
-        primer_name_reverse = primer_name_prefix + 'R' + str(block.block_num + 1)
-        csv_file.write(','.join([primer_name_forward, str(forward.bases), options.scale, options.purification]) + '\n')
-        csv_file.write(','.join([primer_name_reverse, str(reverse.bases), options.scale, options.purification]) + '\n')
+        print('block %d, %d-%d, block size: %d'
+              % (block.block_num, block.start, block.end, block_size))
+        print('forward: %d-%d, %s'
+              % (forward.start, forward.end, forward.bases))
+        print('forward hairpin score %d'
+              % Hairpin(fwd_upper_bases).score())
+        print('reverse: %d-%d, %s'
+              % (reverse.start, reverse.end, reverse.bases))
+        print('reverse hairpin score %d' % \
+              Hairpin(rev_upper_bases).score())
+        primer_name_forward = (primer_name_prefix + 'F'
+                                                  + str(block.block_num + 1))
+        primer_name_reverse = (primer_name_prefix + 'R'
+                                                  + str(block.block_num + 1))
+        csv_file.write(','.join([primer_name_forward,
+                                 str(forward.bases),
+                                 options.scale,
+                                 options.purification])
+                       + '\n')
+        csv_file.write(','.join([primer_name_reverse, 
+                                 str(reverse.bases),
+                                 options.scale, 
+                                 options.purification])
+                       + '\n')
         csv_file.flush()
-        
+
         # generate the ROVER compatible input file (tab delimited format)
         # (compliant to BED file format)
-        rover_file.write(chromosome + '\t' + str(block.start) + '\t' + str(block.end) + '\n')
+        rover_file.write((chromosome + '\t' 
+                                     + str(block.start) 
+                                     + '\t' 
+                                     + str(block.end) 
+                                     + '\n'))
         rover_file.flush()
-
-# def print_best_primers(csv_file, gene_name, exon_id, chromosome, exon_start, exon_end, scored_blocks):
-# global block_sizes
-#    primer_name_prefix = gene_name + '_X' + str(exon_id) + '_'
-#    print('-' * banner_width)
-#    print('gene: %s, exon: %s, %s:%d-%d' % (gene_name, exon_id, chromosome, exon_start, exon_end))
-#    for block in scored_blocks:
-#        block_size = block.end-block.start+1
-# block_sizes.append(block_size)
-#        print('block %d, %d-%d, block size: %d' %
-#              (block.block_num, block.start, block.end, block_size))
-#        forward = block.primer_forward
-#        print('forward: %d-%d, %s' % (forward.start, forward.end, forward.bases))
-#        print('forward hairpin score %d' % Hairpin(forward.bases).score())
-#        reverse = block.primer_reverse
-#        print('reverse: %d-%d, %s' % (reverse.start, reverse.end, reverse.bases))
-#        print('reverse hairpin score %d' % Hairpin(reverse.bases).score())
-#        primer_name_forward = primer_name_prefix + 'F' + str(block.block_num + 1)
-#        primer_name_reverse = primer_name_prefix + 'R' + str(block.block_num + 1)
-#        csv_file.write(','.join([primer_name_forward, str(forward.bases), '250nM', 'HPLC']) + '\n')
-#        csv_file.write(','.join([primer_name_reverse, str(reverse.bases), '250nM', 'HPLC']) + '\n')
-#        csv_file.flush()
 
 # a (possibly large) chunk of DNA from the reference
 
@@ -771,11 +831,12 @@ class Region(object):
 
 
 def get_region(options, chromosome, start, end):
-    ref_filename = os.path.join(options.refdir, chromosome + ".fa")
-    logging.info("Reading region on %s, start: %d, end: %d from file %s" % (chromosome, start, end, ref_filename))
+    ref_filename = os.path.join(options.refdir, chromosome + '.fa')
+    logging.info('Reading region on %s, start: %d, end: %d from file %s'
+                 % (chromosome, start, end, ref_filename))
     with open(ref_filename) as ref_file:
         # XXX should really cache this
-        bases_list = list(SeqIO.parse(ref_file, "fasta"))
+        bases_list = list(SeqIO.parse(ref_file, 'fasta'))
         if len(bases_list) == 1:
             bases = bases_list[0]
             if start > 0 and end <= len(bases):
@@ -783,10 +844,13 @@ def get_region(options, chromosome, start, end):
                 segment = bases[start - 1:end].seq
                 normalised_segment = segment.upper()
                 validate_sequence(normalised_segment)
-                return Region(chromosome, start, end, ref_filename, normalised_segment)
+                return Region(chromosome, start, end, 
+                              ref_filename, normalised_segment)
             else:
-                exit("chromosome %s does not span %d %d" % (chromosome, start, end))
-        exit("got wrong number of sequences in bases_list: %d" % len(bases_list))
+                exit('chromosome %s does not span %d %d'
+                     % (chromosome, start, end))
+        exit('got wrong number of sequences in bases_list: %d'
+             % len(bases_list))
 
 
 def get_primer(region, start, end):
@@ -799,8 +863,8 @@ def get_primer(region, start, end):
 
 def validate_sequence(sequence):
     for base in sequence:
-        if base not in "ATGC":
-            exit("bad base found: %s" % base)
+        if base not in 'ATGC':
+            exit('bad base found: %s' % base)
     return sequence
 
 
@@ -814,7 +878,7 @@ def complement(base):
     if base in complements:
         return complements[base]
     else:
-        exit("found bad base %s" % base)
+        exit('found bad base %s' % base)
 
 
 def score_primer(ideal_melting_temp, sequence):

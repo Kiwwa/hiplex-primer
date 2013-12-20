@@ -60,6 +60,10 @@ parser.add_argument('--idtfile',
                     type=argparse.FileType('w'),
                     required=True,
                     help='CSV output file for IDT')
+parser.add_argument('--roverfile',
+                    metavar='RFILE',
+                    type=argparse.FileType('w'),
+                    help='TSV output for ROVER tool')
 parser.add_argument('--maxhairpinsize',
                     metavar='H',
                     type=int,
@@ -672,7 +676,8 @@ def print_blocksize_distribution():
     print '\t'.join([str(size) for size in distribution])
 
 def print_best_primers(options, gene_name, exon_id, chr, exon_start, exon_end, scored_blocks):
-    csv_file = options.idtfile 
+    csv_file = options.idtfile
+    rover_file = options.roverfile
     primer_name_prefix = gene_name + '_' + str(exon_id) + '_'
     print('-' * banner_width)
     print('gene: %s, exon: %s, %s:%d-%d' % (gene_name, exon_id, chr, exon_start, exon_end))
@@ -698,6 +703,11 @@ def print_best_primers(options, gene_name, exon_id, chr, exon_start, exon_end, s
         csv_file.write(','.join([primer_name_forward, str(forward.bases), options.scale, options.purification]) + '\n')
         csv_file.write(','.join([primer_name_reverse, str(reverse.bases), options.scale, options.purification]) + '\n')
         csv_file.flush()
+        
+        # generate the ROVER compatible input file (tab delimited format)
+        # (compliant to BED file format)
+        rover_file.write(chr + '\t' + str(block.start) + '\t' + str(block.end) + '\n')
+        rover_file.flush()
 
 #def print_best_primers(csv_file, gene_name, exon_id, chr, exon_start, exon_end, scored_blocks):
 #    #global block_sizes

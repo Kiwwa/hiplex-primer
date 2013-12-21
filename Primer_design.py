@@ -59,12 +59,12 @@ parser.add_argument('--log',
                     help='optional log file')
 parser.add_argument('--idtfile',
                     metavar='FILE',
-                    type=argparse.FileType('w'),
+                    type=str,
                     required=True,
                     help='CSV output file for IDT')
 parser.add_argument('--roverfile',
                     metavar='RFILE',
-                    type=argparse.FileType('w'),
+                    type=str,
                     help='TSV output for ROVER tool')
 parser.add_argument('--maxhairpinsize',
                     metavar='H',
@@ -95,42 +95,48 @@ parser.add_argument('--antisenseheelseq',
 
 def main():
     options = parser.parse_args()
+    
+    with open(options.idtfile, 'w') as itdfileopen, \
+         open(options.roverfile, 'w') as roverfileopen:
+            
+        if options.log:
+            logging.basicConfig(filename=options.log,
+                                level=logging.DEBUG,
+                                filemode='w',
+                                format='%(message)s')
 
-    if options.log:
-        logging.basicConfig(filename=options.log,
-                            level=logging.DEBUG,
-                            filemode='w',
-                            format='%(message)s')
+        logging.info('command line: {}'.format(' '.join(sys.argv)))
 
-    logging.info('command line: {}'.format(' '.join(sys.argv)))
-
-    gene_file = GeneFile(options.genes)
-    for (gene_name,
-         exon_id,
-         chromosome,
-         exon_start,
-         exon_end) \
-    in gene_file.process():
-        # score all the sliding windows over this exon
-        window_scores = score_exon_windows(options,
-                                           chromosome,
-                                           gene_name,
-                                           exon_id,
-                                           exon_start,
-                                           exon_end)
-        # find the best scoring window for this exon
-        # best_window = get_best_window(options, window_scores)
-        best_blocks = get_optimal_primer_combination(options, window_scores)
-        # print out the primers for the best window
-        if best_blocks is not None:
-            print_best_primers(options,
-                               gene_name,
-                               exon_id,
-                               chromosome,
-                               exon_start,
-                               exon_end,
-                               best_blocks)
-    gene_file.close()
+        gene_file = GeneFile(options.genes)
+        for (gene_name,
+             exon_id,
+             chromosome,
+             exon_start,
+             exon_end) \
+        in gene_file.process():
+            # score all the sliding windows over this exon
+            window_scores = score_exon_windows(options,
+                                               chromosome,
+                                               gene_name,
+                                               exon_id,
+                                               exon_start,
+                                               exon_end)
+            # find the best scoring window for this exon
+            # best_window = get_best_window(options, window_scores)
+            best_blocks = get_optimal_primer_combination(options, 
+                                                         window_scores)
+            # print out the primers for the best window
+            if best_blocks is not None:
+                print_best_primers(options,
+                                   gene_name,
+                                   exon_id,
+                                   chromosome,
+                                   exon_start,
+                                   exon_end,
+                                   best_blocks,
+                                   itdfileopen,
+                                   roverfileopen)
+        gene_file.close()
 
 
 class GeneFile(object):
@@ -756,9 +762,10 @@ def print_blocksize_distribution():
 
 
 def print_best_primers(options, gene_name, exon_id, chromosome,
-                       exon_start, exon_end, scored_blocks):
-    csv_file = options.idtfile
-    rover_file = options.roverfile
+                       exon_start, exon_end, scored_blocks, 
+                       idtfile, roverfile):
+    csv_file = idtfile
+    rover_file = roverfile
     
     primer_name_prefix = gene_name + '_' + str(exon_id) + '_'
     print('-' * banner_width)
@@ -805,7 +812,6 @@ def print_best_primers(options, gene_name, exon_id, chromosome,
                                  options.scale,
                                  options.purification])
                        + '\n')
-        csv_file.flush()
 
         # generate the ROVER compatible input file (tab delimited format)
         # (compliant to BED file format)
@@ -814,7 +820,6 @@ def print_best_primers(options, gene_name, exon_id, chromosome,
                                      + '\t'
                                      + str(block.end)
                                      + '\n'))
-        rover_file.flush()
 
 # a (possibly large) chunk of DNA from the reference
 

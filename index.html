@@ -10,7 +10,7 @@
     <!--[if lt IE 9]>
     <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
     <![endif]-->
-    <title>Hiplex-primer by bjpop</title>
+    <title>hiplex-primer by bjpop</title>
   </head>
 
   <body>
@@ -18,7 +18,7 @@
       <div class="inner">
 
         <header>
-          <h1>Hiplex-primer</h1>
+          <h1>hiplex-primer</h1>
           <h2>A tool for generating primers for the Hi-Plex targeted, multiplexed DNA sequencing strategy</h2>
         </header>
 
@@ -35,24 +35,29 @@
 <a name="how-to-design-primers-for-hi-plex" class="anchor" href="#how-to-design-primers-for-hi-plex"><span class="octicon octicon-link"></span></a>How to design primers for Hi-Plex</h3>
 
 <h4>
-<a name="1-download-the-hiplex-primer-software" class="anchor" href="#1-download-the-hiplex-primer-software"><span class="octicon octicon-link"></span></a>1. Download the Hiplex primer software.</h4>
+<a name="1-download-the-hiplex-primer-software" class="anchor" href="#1-download-the-hiplex-primer-software"><span class="octicon octicon-link"></span></a>1. Download the hiplex-primer software.</h4>
 
-<p>You can download the software from <a href="https://github.com/bjpop/hiplex-primer/archive/master.zip">github</a>.</p>
+<p>The easiest way to install the hiplex-primer software is to use the following command:</p>
+
+<pre><code>pip install git+https://github.com/bjpop/hiplex-primer.git</code></pre>
+
+<p>Alternatively, you can download the software from <a href="https://github.com/bjpop/hiplex-primer/archive/master.zip">github</a>.</p>
 
 <h4>
 <a name="2-check-your-python-version" class="anchor" href="#2-check-your-python-version"><span class="octicon octicon-link"></span></a>2. Check your Python version.</h4>
 
-<p>Hiplex primer is designed to work with Python 2.6 or 2.7. It <em>will not</em> work with Python 3.</p>
+<p>The hiplex-primer software is designed to work with Python 2.6 or 2.7. It <em>will not</em> work with Python 3.</p>
 
 <h4>
 <a name="3-make-sure-biopython-is-installed-for-your-version-of-python" class="anchor" href="#3-make-sure-biopython-is-installed-for-your-version-of-python"><span class="octicon octicon-link"></span></a>3. Make sure BioPython is installed for your version of Python.</h4>
 
-<p><a href="http://biopython.org/DIST/docs/install/Installation.html">Instructions for installing BioPython</a>.</p>
+<p>If you have used pip to install the hiplex-primer software, BioPython should have installed if not already on your sytem.</p> 
+<p>If you are having difficulty, the instructions for installing BioPython manually can be found <a href="http://biopython.org/DIST/docs/install/Installation.html">here</a>.</p>
 
 <h4>
 <a name="4-download-a-copy-of-all-the-chromosome-reference-files-in-fasta-format" class="anchor" href="#4-download-a-copy-of-all-the-chromosome-reference-files-in-fasta-format"><span class="octicon octicon-link"></span></a>4. Download a copy of all the chromosome reference files in FASTA format.</h4>
 
-<p>Hiplex-primer has been tested with <a href="http://hgdownload.cse.ucsc.edu/goldenPath/hg19/chromosomes/">the UCSC hg19 Human Genome Reference</a>. Hiplex-primer requires each chromosome is stored in a separate file (chr1.fa, chr2.fa etcetera). Hiplex-primer should work with other species equally well; you just need to download the appropriate <a href="http://hgdownload.soe.ucsc.edu/downloads.html">reference sequence</a>. The name of the directory containing your reference files is specified using the --refdir command line parameter for Hiplex-primer.</p>
+<p>The hiplex-primer software has been tested with <a href="http://hgdownload.cse.ucsc.edu/goldenPath/hg19/chromosomes/">the UCSC hg19 Human Genome Reference</a>. It requires each chromosome is stored in a separate file (chr1.fa, chr2.fa etcetera). The hiplex-primer software should work with other species equally well; you just need to download the appropriate <a href="http://hgdownload.soe.ucsc.edu/downloads.html">reference sequence</a>. The name of the directory containing your reference files is specified using the --refdir command line parameter for hiplex-primer.</p>
 
 <h4>
 <a name="5-create-a-file-specifying-the-target-regions" class="anchor" href="#5-create-a-file-specifying-the-target-regions"><span class="octicon octicon-link"></span></a>5. Create a file specifying the target regions.</h4>
@@ -76,10 +81,10 @@ chr17   41215344    41215395    BRCA1,NM_007300
 chr17   41215885    41215973    BRCA1,NM_007300
 </code></pre>
 
-<p>The name of the file is specified using the --genes command line parameter for Hiplex-primer.</p>
+<p>The name of the file is specified using the --genes command line parameter for hiplex-primer.</p>
 
 <h4>
-<a name="6-you-can-run-hiplex-primer-from-the-directory-where-you-downloaded-it" class="anchor" href="#6-you-can-run-hiplex-primer-from-the-directory-where-you-downloaded-it"><span class="octicon octicon-link"></span></a>6. You can run Hiplex-primer from the directory where you downloaded it.</h4>
+<a name="6-you-can-run-hiplex-primer-from-the-directory-where-you-downloaded-it" class="anchor" href="#6-you-can-run-hiplex-primer-from-the-directory-where-you-downloaded-it"><span class="octicon octicon-link"></span></a>6. You can run hiplex-primer from the directory where you downloaded it.</h4>
 
 <p>Here is an example command line, (the values are indicative only and should be tailored to the user needs):</p>
 
@@ -96,32 +101,34 @@ chr17   41215885    41215973    BRCA1,NM_007300
     --blocksizevar 0
     --scale 25nmole
     --purification Standard Desalting
+    --senseheelseq aaaa
+    --antisenseheelseq gggg
 </code></pre>
 
 <h4>
-<a name="7-hiplex-primer-produces-a-log-file" class="anchor" href="#7-hiplex-primer-produces-a-log-file"><span class="octicon octicon-link"></span></a>7. Hiplex-primer produces a log file.</h4>
+<a name="7-hiplex-primer-produces-a-log-file" class="anchor" href="#7-hiplex-primer-produces-a-log-file"><span class="octicon octicon-link"></span></a>7. The hiplex-primer software produces a log file.</h4>
 
 <p>The name of the log file is specified by --log command line argument. Please note that it records the command line that was used.</p>
 
 <p>Below is the start of such an example log file:</p>
 
-<pre><code>command line: ./Primer_design_custom.py --refdir primer_finder_data --genes exon_list.tsv --blocksize 100 --maxprimersize 30 --primervar 10 --splicebuffer 8 --melt 64 --log genes_coords.log --idtfile gene.idt.csv --maxhairpinsize 30 --blocksizevar 0 --scale 25nmole --purification Standard Desalting
+<pre><code>command line: .hiplex-primer --refdir /chromosomes --genes /regions.txt --blocksize 100 --maxprimersize 30 --primervar 10 --splicebuffer 8 --melt 64 --log output.log --idtfile output.csv --roverfile rover_input.tsv --maxhairpinsize 30 --blocksizevar 0 --scale 25nmole --purification HPLC --senseheelseq aaaa --antisenseheelseq gggg
 ********************************************************************************
-chrom:chr16
-exon:1
-exon start:68771313
-exon buff start:68771305
-exon end:68771371
-exon buff end:68771379
-exon size:59
-exon buff size:75
-block_size:100
-num_blocks:1
-window_size:100
-slack:25
-region_start:68771250
-region_end:68771434
-Reading region on chr16, start: 68771250, end: 68771434 from file primer_finder_data/chr16.fa
+chrom:           chr16
+exon:            1
+exon start:      68771313
+exon buff start: 68771305
+exon end:        68771371
+exon buff end:   68771379
+exon size:       59
+exon buff size:  75
+block_size:      100
+num_blocks:      1
+window_size:     100
+slack:           25
+region_start:    68771250
+region_end:      68771434
+Reading region on chr16, start: 68771250, end: 68771434 from file chromosomes/chr16.fa
 region starts with: AGCCC, region ends with: GCGCC
 ================================================================================
 Scoring window starting at 68771280 (1/26)
@@ -130,9 +137,9 @@ block:0
 block start:68771280
 block end:68771379
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Primer dir:forward
-Primer start:68771250
-Primer end:68771279
+Primer dir:   forward
+Primer start: 68771250
+Primer end:   68771279
 Score: 2116, 5'&gt; AGCCCGCTCCAGCCCGGCCCGACCCGACCG &lt;3'
 Score: 1936,  5'&gt; GCCCGCTCCAGCCCGGCCCGACCCGACCG &lt;3'
 Score: 1600,   5'&gt; CCCGCTCCAGCCCGGCCCGACCCGACCG &lt;3'
@@ -145,9 +152,9 @@ Score:  324,         5'&gt; CCAGCCCGGCCCGACCCGACCG &lt;3'
 Score:  196,          5'&gt; CAGCCCGGCCCGACCCGACCG &lt;3'
 Best primer is: CAGCCCGGCCCGACCCGACCG
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Primer dir:reverse
-Primer start:68771409
-Primer end:68771380
+Primer dir:   reverse
+Primer start: 68771409
+Primer end:   68771380
 Score: 1444, 5'&gt; GCGGCCCGAATGCGTCCCTCGCAAGTCAGG &lt;3'
 Score: 1156,  5'&gt; CGGCCCGAATGCGTCCCTCGCAAGTCAGG &lt;3'
 Score:  900,   5'&gt; GGCCCGAATGCGTCCCTCGCAAGTCAGG &lt;3'
@@ -155,6 +162,10 @@ Score:  676,    5'&gt; GCCCGAATGCGTCCCTCGCAAGTCAGG &lt;3'
 Score:  484,     5'&gt; CCCGAATGCGTCCCTCGCAAGTCAGG &lt;3'
 Score:  324,      5'&gt; CCGAATGCGTCCCTCGCAAGTCAGG &lt;3'
 Score:  196,       5'&gt; CGAATGCGTCCCTCGCAAGTCAGG &lt;3'
+Score:  100,        5'&gt; GAATGCGTCCCTCGCAAGTCAGG &lt;3'
+Score:   36,         5'&gt; AATGCGTCCCTCGCAAGTCAGG &lt;3'
+Score:   16,          5'&gt; ATGCGTCCCTCGCAAGTCAGG &lt;3'
+Best primer is: ATGCGTCCCTCGCAAGTCAGG
 </code></pre>
 
 <h4>
@@ -174,6 +185,8 @@ Score:  196,       5'&gt; CGAATGCGTCCCTCGCAAGTCAGG &lt;3'
     --blocksizevar 0 
     --scale 25nmole 
     --purification Standard Desalting
+    --senseheelseq aaaa
+    --antisenseheelseq gggg
 </code></pre>
 
 <p>In this example, we have saved the reference fasta files in the directory called primer_finder_data. Our target region list is a file called genes_coords.tsv. We have set the primer-intervening sequence to 100 bases, the maximum primer size is 30 bases, we are allowing primer length to vary by 10 bases, we are allowing for a buffer of 8 additional bases on each side of the target regions listed in genes_coords.tsv in order to account for splice sites, we have set our optimum melting temperature to 64ºC, the log file is called genes_coords.log, we do not allow for primer-intervening sequence to vary in size, we want to order our oligos in the 25 nmole scale, with standard purification.</p>

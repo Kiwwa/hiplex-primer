@@ -66,10 +66,6 @@ parser.add_argument('--roverfile',
                     metavar='RFILE',
                     type=str,
                     help='TSV output for ROVER tool')
-parser.add_argument('--maxhairpinsize',
-                    metavar='H',
-                    type=int,
-                    help='maximum hairpin size allowed')
 parser.add_argument('--blocksizevar',
                     metavar='B',
                     type=int,
@@ -92,6 +88,10 @@ parser.add_argument('--antisenseheelseq',
                     type=str,
                     help='Sense strand primer heel sequence')
 
+# Global Vars
+banner_width = 80   # width of banner message separator
+block_sizes = []    # XXX Why is this outside a def or class? (was above                         print_blocksize_distribution)
+complements = {'N': 'N', 'A': 'T', 'T': 'A', 'G': 'C', 'C': 'G'}
 
 def main():
     options = parser.parse_args()
@@ -169,9 +169,6 @@ class GeneFile(object):
 
     def close(self):
         self.file.close()
-
-# width of banner message separator
-banner_width = 80
 
 
 class ScoredBlock(object):
@@ -324,24 +321,12 @@ def score_exon_windows(options,
                 best_primer = None
                 for suffix_start in range(0, options.primervar):
                     primer_suffix = primer[suffix_start:]
-                    filtered = False
-                    if options.maxhairpinsize is not None:
-                        filtered = filter_primer(options,
-                                                 'hairpin',
-                                                 primer_suffix)
                     primer_score = score_primer(options.melt, primer_suffix)
-                    if filtered:
-                        logging.info(("Score: %4d, %s5'> %s <3', Filtered (%s)"
-                                      % (primer_score,
-                                         ' ' * suffix_start,
-                                         primer_suffix,
-                                         'hairpin')))
-                        continue
-                    else:
-                        logging.info(("Score: %4d, %s5'> %s <3'"
-                                      % (primer_score,
-                                         ' ' * suffix_start,
-                                         primer_suffix)))
+                    filtered = False
+                    logging.info(("Score: %4d, %s5'> %s <3'"
+                                  % (primer_score,
+                                     ' ' * suffix_start,
+                                     primer_suffix)))
                     # calculate the start position of this primer candidate
                     if direction == 'forward':
                         candidate_start = primer_start + suffix_start
@@ -382,81 +367,8 @@ def score_exon_windows(options,
                                       primer_forward,
                                       primer_reverse)
             window_scores[window_start].append(block_score)
-#            if primer_forward != None and primer_reverse != None:
-                #block_score = (block, block_start, block_end, primer_forward, primer_reverse)
-#                block_score = ScoredBlock(block_num, block_start, block_end, primer_forward, primer_reverse)
-#                window_scores[window_start].append(block_score)
-#            else:
-#                print("** Warning **: did not find best primers for window start: %d, block start: %d" %
-#                         (window_start, block_start))
         window_count += 1
     return window_scores
-
-
-'''
-Choosing the optimal combination of primers within block size variance.
-
-              |-------- block 0 --------|-------- block 1 --------|
-              |---------------------------------------------------|
-window 1 ----\|                         |/----                    
-                                   ----\|                         |/----
-
-window 2  ----\|                         |/----
-                                    ----\|                         |/----
-...           ...                           ...                       ...
-
-window n         ----\|                         |/----
-                                           ----/|                       |/----
-
-
- The score of block 0 forward primer     
-      ^
-score |    |
-      |  * |  *
-      | * *| * **  **
-      |*   **    **
-      |____|___________> window
-
- The score of block 0 reverse primer
-      ^
-score |*   |*
-      | * ** *
-      |  * |  *   *
-      |    |   *** **  
-      |____|___________> window
-      |    |
-      |    |
-       <-->
-block size variance
-
- 1. choose the best scored primers between block size variance.
- 2. move on to the next block.
-
- The score of block 1 forward primer
-      ^
-score |  |  
-      |  | *     **
-      |  |* **  *  *
-      |***    **    *
-      |__|_____________> window
-
- The score of block 1 reverse primer
-      ^
-score |  |   **
-      |  | **  *
-      |**|      *  *
-      |  ***      **
-      |__|_____________> window
-      |  |  
-      |  | 
-       <>
-    block size variance
-    * the end of block size variance should be not greater than
-      the end of reverse primer of the previous block.
-
- 3. choose the best scored primers between block size variance.
-
-'''
 
 
 def get_optimal_primer_combination(options, window_scores):
@@ -568,9 +480,9 @@ def get_optimal_primer_combination(options, window_scores):
                 # no_candidate = True
                 break
             best_forward, best_reverse = get_optimal_distance_pair(
-                best_forward_primers,
-                best_reverse_primers,
-                block_size)
+                                                        best_forward_primers,
+                                                        best_reverse_primers,
+                                                        block_size)
             best_forward_index, forward_primer = best_forward
             best_reverse_index, reverse_primer = best_reverse
             positions += [best_forward_index, best_reverse_index]
@@ -583,6 +495,7 @@ def get_optimal_primer_combination(options, window_scores):
                                         reverse_primer)
             subset.append(optimal_block)
             total_score += (forward_primer.score + reverse_primer.score)
+            
             # Need to adjust the var_start and var_end, since
             # for the following block, the var_end should not be greater than
             # the index of the previous block's reverse primer.
@@ -636,20 +549,14 @@ def get_optimal_primer_combination(options, window_scores):
                      % (windows[optimal_subset_start], optimal_score))
     return optimal_blocks
 
-# given all the scores for each position of the sliding window, find the
-# best one
 
+# given all the scores for each position of 
+# the sliding window, find the best one
 
 def get_best_window(options, window_scores):
     best_window = None
     best_score = None
     for window, scoredBlocks in window_scores.items():
-        # Check Filter
-        filtered, reason = check_filter(options, scoredBlocks)
-        if filtered:
-            logging.info('Window: %d is filtered due to %s.'
-                         % (window, reason))
-            continue
         total_score = get_total_window_score(scoredBlocks)
         logging.info('Window: %d, total score: %d' % (window, total_score))
         if best_window == None:
@@ -698,41 +605,6 @@ def check_potential_issues(scoredBlocks):
                          % (block.primer_reverse.bases,
                             reverse_hairpin.score()))
             logging.info(reverse_hairpin.print_hairpin())
-
-
-def check_filter(options, scoredBlocks):
-    filtered = False
-    reason = None
-    for block in scoredBlocks:
-        forward = block.primer_forward
-        reverse = block.primer_reverse
-        # If forward or reverse is None, that means
-        # the primer was filtered at the stage where the primer is selected
-        # among the primers within the allowed primer variation.
-        if forward is None or \
-           reverse is None:
-            return True, 'hairpin'
-        # primer-dimer and difference in Tm of both forward and reverse
-        # have to be considered with two primers together.
-        # if filter_primer(options, 'dimer', forward.bases, reverse.bases):
-        #    return True, 'dimer'
-        # if filter_primer(options, 'tmdiff', forward.bases, reverse.bases):
-        #    return True, 'tmdiff'
-    return filtered, reason
-
-'''
-def print_best_primers(gene_name, exon_id, chromosome, exon_start, exon_end, scored_blocks):
-    print('-' * banner_width)
-    print('gene: %s, exon: %s, %s:%d-%d' % (gene_name, exon_id, chromosome, exon_start, exon_end))
-    for block in scored_blocks:
-        print('block %d, %d-%d' % (block.block_num, block.start, block.end))
-        forward = block.primer_forward
-        print('forward: %d-%d, %s' % (forward.start, forward.end, forward.bases))
-        reverse = block.primer_reverse
-        print('reverse: %d-%d, %s' % (reverse.start, reverse.end, reverse.bases))
-'''
-
-block_sizes = []
 
 
 def print_blocksize_distribution():
@@ -792,12 +664,8 @@ def print_best_primers(options, gene_name, exon_id, chromosome,
               % (block.block_num, block.start, block.end, block_size))
         print('forward: %d-%d, %s'
               % (forward.start, forward.end, forward.bases))
-        print('forward hairpin score %d'
-              % Hairpin(fwd_upper_bases).score())
         print('reverse: %d-%d, %s'
               % (reverse.start, reverse.end, reverse.bases))
-        print('reverse hairpin score %d'
-              % Hairpin(rev_upper_bases).score())
         primer_name_forward = (primer_name_prefix + 'F'
                                                   + str(block.block_num + 1))
         primer_name_reverse = (primer_name_prefix + 'R'
@@ -821,11 +689,10 @@ def print_best_primers(options, gene_name, exon_id, chromosome,
                                      + str(block.end)
                                      + '\n'))
 
-# a (possibly large) chunk of DNA from the reference
-
 
 class Region(object):
-
+    # a (possibly large) chunk of DNA from the reference
+    
     def __init__(self, chromosome, start, end, file, bases):
         self.chromosome = chromosome
         self.start = start
@@ -833,11 +700,13 @@ class Region(object):
         self.file = file
         self.bases = bases
 
-# SeqIO uses 0 based indexes, but our input data uses 1 based indexes,
-# so we need to convert here
+
 
 
 def get_region(options, chromosome, start, end):
+    # SeqIO uses 0 based indexes, but our input data uses 1 based indexes,
+    # so we need to convert here
+    
     ref_filename = os.path.join(options.refdir, chromosome + '.fa')
     logging.info('Reading region on %s, start: %d, end: %d from file %s'
                  % (chromosome, start, end, ref_filename))
@@ -868,10 +737,10 @@ def get_primer(region, start, end):
     new_end = end - region.start
     return region.bases[new_start:new_end + 1]
 
-# check our sequence only has A,T,G,C
-
 
 def validate_sequence(sequence):
+    # check our sequence only has A,T,G,C
+    
     for base in sequence:
         if base not in 'ATGC':
             exit('bad base found: %s' % base)
@@ -880,8 +749,6 @@ def validate_sequence(sequence):
 
 def reverse_complement(sequence):
     return ''.join(map(complement, sequence[::-1]))
-
-complements = {'N': 'N', 'A': 'T', 'T': 'A', 'G': 'C', 'C': 'G'}
 
 
 def complement(base):
@@ -938,145 +805,6 @@ def get_score(positions):
     if score > maxscore:
         maxscore = score
     return maxscore
-
-
-class Hairpin(object):
-
-    def __init__(self, sequence):
-        self.sequence = sequence
-        self._score = None
-        self._top = None
-        self._bottom = None
-        self._index = None
-        self._positions = None
-
-    def print_hairpin(self):
-
-        def hairpin_string(top, bottom, startIndex, positions):
-            if positions:
-                matches = [s for s in ' ' * min(len(top), len(bottom))]
-                for i in positions:
-                    matches[i] = '|'
-                indentation = startIndex
-                top = ''.join(top) + " <5'"
-                matches = ' ' * indentation + ''.join(matches)
-                bottom = ' ' * indentation + ''.join(bottom) + " >3'"
-                hairpin = '%s\n%s\n%s' % (top, matches, bottom)
-                return hairpin
-                # print '-'*(len(top + bottom) + startIndex)
-                # print ' '+''.join(top) + " <5'"
-                # print ' '*indentation, ''.join(matches)
-                # print ' '*indentation, ''.join(bottom) + " >3'"
-                # print '-'*(len(top + bottom) + startIndex)
-
-        if self._score is None:
-            self.score()
-        return hairpin_string(self._top, self._bottom,
-                              self._index, self._positions)
-
-    def score(self):
-
-        def detect_hairpins(toplength):
-            top = self.sequence[:toplength]
-            bottom = self.sequence[toplength:max(toplength * 2,
-                                                 len(self.sequence))]
-            top = top[::-1]
-            hairpins = []
-            for startIndex in [0, 1]:
-                positions = complement_positions(top[startIndex:], bottom)
-                if positions:
-                    hairpins.append((top, bottom, startIndex, positions))
-            return hairpins
-
-        def find_maxscore(hairpins):
-            # maxscore = (score, top, bottom, startIndex, positions)
-            maxscore = (0, None, None, None, None)
-            for top, bottom, index, positions in hairpins:
-                score = get_score(positions)
-                if score > maxscore[0]:
-                    maxscore = (score, top, bottom, index, positions)
-            return maxscore
-
-        if self._score is None:
-            # maxscore = (score, top, bottom, startIndex, positions)
-            maxscore = (0, None, None, None, None)
-            for toplength in range(1, len(self.sequence)):
-                hairpins = detect_hairpins(toplength)
-                score = find_maxscore(hairpins)
-                if score[0] > maxscore[0]:
-                    maxscore = score
-            self._score = maxscore[0]
-            self._top = maxscore[1]
-            self._bottom = maxscore[2]
-            self._index = maxscore[3]
-            self._positions = maxscore[4]
-        return self._score
-
-
-class Dimer(object):
-
-    def __init__(self, top, bottom=None):
-        self._top = top
-        self._bottom = bottom if bottom is not None else top[::-1]
-        self._maxscore = None  # (score, direction, startIndex,  positions)
-
-    def score(self):
-
-        def detect_dimers():
-            matches = []
-            # forward screening
-            for i in range(0, len(self._top)):
-                top = self._top[i:]
-                positions = complement_positions(top, self._bottom)
-                if positions:
-                    matches.append(('forward', i, positions))
-            # backward screening
-            # We do not need to start from index 0,
-            # since it is already convered by forward screening.
-            for i in range(1, len(self._bottom)):
-                bottom = self._bottom[i:]
-                positions = complement_positions(self._top, bottom)
-                if positions:
-                    matches.append(('backward', i, positions))
-            return matches
-
-        def find_maxscore(matches):
-            # maxscore = (score, direction, startIndex, positions)
-            maxscore = (0, None, None, None)
-            for direction, index, positions in matches:
-                #print_dimer(direction, index, positions)
-                score = get_score(positions)
-                if score > maxscore[0]:
-                    maxscore = (score, direction, index, positions)
-            return maxscore
-
-        def print_dimer(direction, index, positions):
-            if positions:
-                matchSigns = [s for s in ' ' * min(len(self._top),
-                                                   len(self._bottom))]
-                for i in positions:
-                    matchSigns[i] = '|'
-                matchSigns = ''.join(matchSigns)
-                indentation = index
-                if direction == 'backward':
-                    top = ' ' * indentation + "5'> " + self._top + " >3'"
-                    bottom = "3'< " + self._bottom + " <5'"
-                    matchSigns = ' ' * (indentation + 4) + matchSigns
-                if direction == 'forward':
-                    top = "5'> " + self._top + " >3'"
-                    bottom = ' ' * indentation + "3'< " + self._bottom + " <5'"
-                    matchSigns = ' ' * (indentation + 4) + matchSigns
-                print '-' * 2 * (max(len(self._top), len(self._bottom)) + 10)
-                print ''.join(top)
-                print ''.join(matchSigns)
-                print ''.join(bottom)
-                print '-' * 2 * (max(len(self._top), len(self._bottom)) + 10)
-
-        matches = detect_dimers()
-        maxscore = find_maxscore(matches)
-        # print 'Max scored dimer is', maxscore
-        #print_dimer(maxscore[1], maxscore[2], maxscore[3])
-        return maxscore[0]
 
 
 def filter_primer(options, filter, primer_a, primer_b=None):

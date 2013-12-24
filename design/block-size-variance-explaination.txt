@@ -1,0 +1,64 @@
+'''
+Choosing the optimal combination of primers within block size variance.
+
+              |-------- block 0 --------|-------- block 1 --------|
+              |---------------------------------------------------|
+window 1 ----\|                         |/----                    
+                                   ----\|                         |/----
+
+window 2  ----\|                         |/----
+                                    ----\|                         |/----
+...           ...                           ...                       ...
+
+window n         ----\|                         |/----
+                                           ----/|                       |/----
+
+
+ The score of block 0 forward primer     
+      ^
+score |    |
+      |  * |  *
+      | * *| * **  **
+      |*   **    **
+      |____|___________> window
+
+ The score of block 0 reverse primer
+      ^
+score |*   |*
+      | * ** *
+      |  * |  *   *
+      |    |   *** **  
+      |____|___________> window
+      |    |
+      |    |
+       <-->
+block size variance
+
+ 1. choose the best scored primers between block size variance.
+ 2. move on to the next block.
+
+ The score of block 1 forward primer
+      ^
+score |  |  
+      |  | *     **
+      |  |* **  *  *
+      |***    **    *
+      |__|_____________> window
+
+ The score of block 1 reverse primer
+      ^
+score |  |   **
+      |  | **  *
+      |**|      *  *
+      |  ***      **
+      |__|_____________> window
+      |  |  
+      |  | 
+       <>
+    block size variance
+    * the end of block size variance should be not greater than
+      the end of reverse primer of the previous block.
+
+ 3. choose the best scored primers between block size variance.
+
+'''

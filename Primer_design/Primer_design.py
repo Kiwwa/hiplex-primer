@@ -643,6 +643,8 @@ def print_best_primers(options, gene_name, exon_id, chromosome,
     print('-' * banner_width)
     print('gene: %s, exon: %s, %s:%d-%d' % (gene_name, exon_id, chromosome,
                                             exon_start, exon_end))
+    print('-' * banner_width)
+    print #formatting the output
     for block in scored_blocks:
 
         block_size = block.end - block.start + 1
@@ -680,6 +682,7 @@ def print_best_primers(options, gene_name, exon_id, chromosome,
                                  options.scale,
                                  options.purification])
                        + '\n')
+        print #formatting the output
 
         # generate the ROVER compatible input file (tab delimited format)
         # (compliant to BED file format)

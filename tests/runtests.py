@@ -1,7 +1,6 @@
 #!/usr/bin/env/python
 
 import unittest
-import primer_design
 
 def isodd(n):
 	return n % 2 == 1

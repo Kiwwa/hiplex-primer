@@ -243,20 +243,20 @@ def score_exon_windows(options,
     region_end = exon_buffer_end + slack + options.maxprimersize
 
     logging.info('*' * banner_width)
-    logging.info('chrom:\t\t%s' % chromosome)
-    logging.info('exon:\t\t%s' % exon_id)
-    logging.info('exon start:\t%d' % exon_start)
-    logging.info('exon buff start:%d' % exon_buffer_start)
-    logging.info('exon end:\t%d' % exon_end)
-    logging.info('exon buff end:\t%d' % exon_buffer_end)
-    logging.info('exon size:\t%d' % exon_size)
-    logging.info('exon buff size:\t%d' % exon_buffer_size)
-    logging.info('block_size:\t%d' % options.blocksize)
-    logging.info('num_blocks:\t%d' % num_blocks)
-    logging.info('window_size:\t%d' % window_size)
-    logging.info('slack:\t\t%d' % slack)
-    logging.info('region_start:\t%d' % region_start)
-    logging.info('region_end:\t%d' % region_end)
+    logging.info('chrom:\t\t\t\t%s' % chromosome)
+    logging.info('exon:\t\t\t\t%s' % exon_id)
+    logging.info('exon start:\t\t\t%d' % exon_start)
+    logging.info('exon buff start:\t%d' % exon_buffer_start)
+    logging.info('exon end:\t\t\t%d' % exon_end)
+    logging.info('exon buff end:\t\t%d' % exon_buffer_end)
+    logging.info('exon size:\t\t\t%d' % exon_size)
+    logging.info('exon buff size:\t\t%d' % exon_buffer_size)
+    logging.info('block_size:\t\t\t%d' % options.blocksize)
+    logging.info('num_blocks:\t\t\t%d' % num_blocks)
+    logging.info('window_size:\t\t%d' % window_size)
+    logging.info('slack:\t\t\t\t%d' % slack)
+    logging.info('region_start:\t\t%d' % region_start)
+    logging.info('region_end:\t\t\t%d' % region_end)
 
     region = get_region(options, chromosome, region_start, region_end)
 
@@ -290,15 +290,15 @@ def score_exon_windows(options,
             block_end = block_start + options.blocksize - 1
 
             logging.info('-' * banner_width)
-            logging.info('block:\t\t%d' % block_num)
+            logging.info('block:\t\t\t%d' % block_num)
             logging.info('block start:\t%d' % block_start)
-            logging.info('block end:\t%d' % block_end)
+            logging.info('block end:\t\t%d' % block_end)
 
             # find the best primer for either the start or the end of a block.
             def find_best_primer(direction, primer_end):
 
                 logging.info('~' * (banner_width / 2))
-                logging.info('Primer dir:\t%s' % direction)
+                logging.info('Primer dir:\t\t%s' % direction)
                 if direction == 'forward':
                     primer_start = (primer_end - options.maxprimersize) + 1
                     primer = get_primer(region, primer_start, primer_end)
@@ -309,7 +309,7 @@ def score_exon_windows(options,
                     primer = reverse_complement(primer)
 
                 logging.info('Primer start:\t%d' % primer_start)
-                logging.info('Primer end:\t%d' % primer_end)
+                logging.info('Primer end:\t\t%d' % primer_end)
 
                 primer_len = len(primer)
 

@@ -1,0 +1,3 @@
+chrexample	100	150	first_exon
+chrexample	120	170	second_exon
+chrexample	140	340	third_exon

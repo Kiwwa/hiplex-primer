@@ -1,6 +1,4 @@
-*.log
 *.csv
 *.tsv
-*.fa
 runner.py
 chromosomes/

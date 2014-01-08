@@ -154,10 +154,7 @@ class GeneFile(object):
             start = int(start)
             end = int(end)
             gene_name_parts = name.split(',')
-            if len(gene_name_parts) >= 2:
-                gene_name = gene_name_parts[0]
-            else:
-                gene_name = name
+            gene_name = '-'.join(gene_name_parts)
             if gene_name in self.gene_blocks:
                 current_block_number = self.gene_blocks[gene_name]
                 self.gene_blocks[gene_name] = \
@@ -607,6 +604,12 @@ def print_best_primers(options, gene_name, exon_id, chromosome,
                                      + str(block.start)
                                      + '\t'
                                      + str(block.end)
+                                     + '\t'
+                                     + gene_name + "-" + str(exon_id)
+                                     + '\t'
+                                     + str(block.primer_forward.bases)
+                                     + '\t'
+                                     + str(block.primer_reverse.bases)
                                      + '\n'))
 
 

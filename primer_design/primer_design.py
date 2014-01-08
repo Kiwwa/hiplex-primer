@@ -10,8 +10,6 @@ from Bio import SeqIO
 import sys
 import math
 import os
-import csv
-import itertools
 import argparse
 import logging
 
@@ -89,9 +87,11 @@ parser.add_argument('--antisenseheelseq',
                     help='Sense strand primer heel sequence')
 
 # Global Vars
-banner_width = 80   # width of banner message separator
-block_sizes = []    # XXX Why is this outside a def or class? (was above                         print_blocksize_distribution)
-complements = {'N': 'N', 'A': 'T', 'T': 'A', 'G': 'C', 'C': 'G'}
+banner_width    = 80    # width of banner message separator
+block_sizes     = []    # XXX Why is this outside a def or class? (was above
+                        # print_blocksize_distribution)
+complements     = {'N': 'N', 'A': 'T', 'T': 'A', 'G': 'C', 'C': 'G'}
+base_temp       = {'A': 2, 'T': 2, 'G': 4, 'C': 4}
 
 def main():
     options = parser.parse_args()
@@ -123,7 +123,7 @@ def main():
                                                exon_end)
             # find the best scoring window for this exon
             # best_window = get_best_window(options, window_scores)
-            best_blocks = get_optimal_primer_combination(options, 
+            best_blocks = get_optimal_primer_combination(options,
                                                          window_scores)
             # print out the primers for the best window
             if best_blocks is not None:
@@ -550,89 +550,6 @@ def get_optimal_primer_combination(options, window_scores):
     return optimal_blocks
 
 
-# given all the scores for each position of 
-# the sliding window, find the best one
-
-def get_best_window(options, window_scores):
-    best_window = None
-    best_score = None
-    for window, scoredBlocks in window_scores.items():
-        total_score = get_total_window_score(scoredBlocks)
-        logging.info('Window: %d, total score: %d' % (window, total_score))
-        if best_window == None:
-            # this is the first one we've seen
-            best_window = window
-            best_score = total_score
-        elif total_score == best_score:
-            # XXX we have a tie for the best, what to do?
-            logging.info('Tie for best window between %d and %d'
-                         % (best_window, window))
-        elif total_score < best_score:
-            best_window = window
-            best_score = total_score
-    if best_window is None:
-        logging.info('Could not find the best window.')
-    else:
-        logging.info('Best window: %d, score: %d' % (best_window, best_score))
-        check_potential_issues(window_scores[best_window])
-    return best_window
-
-
-def get_total_window_score(scoredBlocks):
-    score = 0
-    for block in scoredBlocks:
-        score += block.primer_forward.score + block.primer_reverse.score
-    return score
-
-
-def check_potential_issues(scoredBlocks):
-    problems = None
-    for block in scoredBlocks:
-        forward_hairpin = Hairpin(block.primer_forward.bases)
-        reverse_hairpin = Hairpin(block.primer_reverse.bases)
-        if forward_hairpin.score() >= 5 or reverse_hairpin.score() >= 5:
-            logging.info('+' * banner_width)
-            logging.info('Potential issues.')
-            logging.info('block num: %s, start: %s, end: %s' %
-                         (block.block_num, block.start, block.end))
-        if forward_hairpin.score() >= 5:
-            logging.info('Forward primer %s has hairpin with length of %s.'
-                         % (block.primer_forward.bases,
-                            forward_hairpin.score()))
-            logging.info(forward_hairpin.print_hairpin())
-        if reverse_hairpin.score() >= 5:
-            logging.info('Reverse primer %s has hairpin with length of %s.'
-                         % (block.primer_reverse.bases,
-                            reverse_hairpin.score()))
-            logging.info(reverse_hairpin.print_hairpin())
-
-
-def print_blocksize_distribution():
-    if not block_sizes:
-        return
-    block_sizes.sort()
-    min = block_sizes[0]
-    max = block_sizes[-1]
-    max_count = 0
-    distribution = {}
-    for size in block_sizes:
-        if size not in distribution:
-            distribution[size] = 1
-        else:
-            distribution[size] += 1
-        if distribution[size] > max_count:
-            max_count = distribution[size]
-    for y in range(max_count, 0, -1):
-        ys = []
-        for key, value in distribution.items():
-            if value >= y:
-                ys.append('--')
-            else:
-                ys.append('')
-        print '\t'.join(ys)
-    print '\t'.join([str(size) for size in distribution])
-
-
 def print_best_primers(options, gene_name, exon_id, chromosome,
                        exon_start, exon_end, scored_blocks, 
                        idtfile, roverfile):
@@ -704,8 +621,6 @@ class Region(object):
         self.bases = bases
 
 
-
-
 def get_region(options, chromosome, start, end):
     # SeqIO uses 0 based indexes, but our input data uses 1 based indexes,
     # so we need to convert here
@@ -765,7 +680,8 @@ def score_primer(ideal_melting_temp, sequence):
     t_m = melting_temp(sequence)
     return (ideal_melting_temp - t_m) ** 2
 
-base_temp = {'A': 2, 'T': 2, 'G': 4, 'C': 4}
+
+
 
 
 def melting_temp(sequence):
@@ -773,73 +689,6 @@ def melting_temp(sequence):
     for base in sequence:
         t_m += base_temp[base]
     return t_m
-
-
-def isComplement(x, y):
-    cs = {'A': 'T', 'G': 'C', 'T': 'A', 'C': 'G'}
-    return cs[x] == y
-
-
-def complement_positions(top, bottom):
-    positions = []
-    for i, (t, b) in enumerate(zip(top, bottom)):
-        if isComplement(t, b):
-            positions.append(i)
-    return positions
-
-
-def get_score(positions):
-    # Find the longest consecutive matches
-    score = 0
-    maxscore = 0
-    if len(positions) == 1:
-        score = 1
-    elif len(positions) > 1:
-        score = 1
-        lastposition = positions[0]
-        for position in positions[1:]:
-            if position == lastposition + 1:
-                score += 1
-            else:
-                if score > maxscore:
-                    maxscore = score
-                score = 1
-            lastposition = position
-    if score > maxscore:
-        maxscore = score
-    return maxscore
-
-
-def filter_primer(options, filter, primer_a, primer_b=None):
-
-    def gc_count(primer):
-        count = 0
-        for n in primer:
-            if n == 'G' or n == 'C':
-                count += 1
-        return count
-
-    filtered = False
-    if filter == 'hairpin':
-        hairpin = Hairpin(primer_a).score()
-        if hairpin > options.maxhairpinsize:
-            filtered = True
-    if filter == 'dimer':
-        dimer = Dimer(primer_a, primer_b).score()
-        if dimer > 4:
-            filtered = True
-    if filter == 'endwithgc':
-        if not (primer_a.endswith('G') or
-                primer_a.endswith('C')):
-            filtered = True
-        elif gc_count(primer_a[-5:]) > 3:
-            filtered = True
-    if filter == 'tmdiff':
-        tm_a = melting_temp(primer_a)
-        tm_b = melting_temp(primer_b)
-        if abs(tm_a - tm_b) > 5:
-            filtered = True
-    return filtered
 
 
 if __name__ == '__main__':

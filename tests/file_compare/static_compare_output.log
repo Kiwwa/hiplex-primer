@@ -1,4 +1,4 @@
-command line: ../primer_design/primer_design.py --refdir ../exampledata/examplechromosome --genes ../exampledata/exampleregions.txt --blocksize 100 --maxprimersize 30 --primervar 10 --splicebuffer 8 --melt 64 --log ../exampledata/output/output.log --idtfile ../exampledata/output/output.csv --roverfile ../exampledata/output/rover_input.tsv --blocksizevar 5 --scale 25nmole --purification HPLC --senseheelseq aaaa --antisenseheelseq gggg
+command line: ../primer_design/primer_design.py --refdir ../exampledata/examplechromosome --genes ../exampledata/exampleregions.txt --blocksize 100 --maxprimersize 30 --primervar 10 --splicebuffer 8 --melt 64 --log ../exampledata/exampleoutput/output.log --idtfile ../exampledata/exampleoutput/output.csv --roverfile ../exampledata/exampleoutput/rover_input.tsv --blocksizevar 5 --scale 25nmole --purification HPLC --senseheelseq aaaa --antisenseheelseq gggg
 ********************************************************************************
 chrom:				chrexample
 exon:				1

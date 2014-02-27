@@ -97,12 +97,12 @@ def main():
     options = parser.parse_args()
     
     if options.roverfile is not None:
-	    with open(options.idtfile, 'w') as itdfileopen, \
+	    with open(options.idtfile, 'w') as idtfileopen, \
 	         open(options.roverfile, 'w') as roverfileopen:
-	         	filewriteloop(options, itdfileopen, roverfileopen)        	
+	         	filewriteloop(options, idtfileopen, roverfileopen)        	
     elif options.roverfile is None:
-		with open(options.idtfile, 'w') as itdfileopen:
-			filewriteloop(options, itdfileopen, None)
+		with open(options.idtfile, 'w') as idtfileopen:
+			filewriteloop(options, idtfileopen, None)
 
 
 def filewriteloop(options, idtfileopen, roverfileopen):

@@ -96,10 +96,17 @@ parser.add_argument('--antisenseheelseq',
 def main():
     options = parser.parse_args()
     
-    with open(options.idtfile, 'w') as itdfileopen, \
-         open(options.roverfile, 'w') as roverfileopen:
-            
-        if options.log:
+    if options.roverfile is not None:
+	    with open(options.idtfile, 'w') as itdfileopen, \
+	         open(options.roverfile, 'w') as roverfileopen:
+	         	filewriteloop(options, itdfileopen, roverfileopen)        	
+    elif options.roverfile is None:
+		with open(options.idtfile, 'w') as itdfileopen:
+			filewriteloop(options, itdfileopen, None)
+
+
+def filewriteloop(options, idtfileopen, roverfileopen):
+	if options.log:
             logging.basicConfig(filename=options.log,
                                 level=logging.DEBUG,
                                 filemode='w',
@@ -134,10 +141,9 @@ def main():
                                    exon_start,
                                    exon_end,
                                    best_blocks,
-                                   itdfileopen,
+                                   idtfileopen,
                                    roverfileopen)
         gene_file.close()
-
 
 class GeneFile(object):
 
@@ -815,11 +821,12 @@ def print_best_primers(options, gene_name, exon_id, chromosome,
 
         # generate the ROVER compatible input file (tab delimited format)
         # (compliant to BED file format)
-        rover_file.write((chromosome + '\t'
-                                     + str(block.start)
-                                     + '\t'
-                                     + str(block.end)
-                                     + '\n'))
+        if rover_file is not None:
+	        rover_file.write((chromosome + '\t'
+	                                     + str(block.start)
+	                                     + '\t'
+	                                     + str(block.end)
+	                                     + '\n'))
 
 # a (possibly large) chunk of DNA from the reference
 
